@@ -7,8 +7,10 @@ export default function Results({ data, origin, destination, carDest, onReset })
   useEffect(() => {
     if (!destination) return;
     setTransitLoading(true);
-    fetch(`/api/transit?stop=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
-      .then(r => r.json())
+    fetch(`/api/transit?stop=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`, {
+      credentials: 'include',
+    })
+      .then(r => r.ok ? r.json() : null)
       .then(d => setTransit(d))
       .catch(() => setTransit(null))
       .finally(() => setTransitLoading(false));

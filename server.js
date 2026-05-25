@@ -60,7 +60,11 @@ app.use(helmet({
 // body parser
 app.use('/api/analyze', express.json({ limit: '2mb' }));
 app.use('/api/login',   express.json({ limit: '1kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// בprod — מגיש את ה-React build; בdev — Vite על פורט 5173 עושה את זה
+const STATIC_DIR = IS_PROD
+  ? path.join(__dirname, 'client', 'dist')
+  : path.join(__dirname, 'public');
+app.use(express.static(STATIC_DIR));
 
 // ─── Security logging ────────────────────────────────────────────────────────
 function secLog(type, req, extra = '') {
@@ -366,7 +370,7 @@ app.get('/api/cities', requireAuth, makeRateLimit('cities'), async (req, res) =>
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(STATIC_DIR, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;

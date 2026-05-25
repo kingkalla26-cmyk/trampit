@@ -1,10 +1,13 @@
 {
   "name": "trampit",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "אפליקציית ניווט לטרמפיסטים",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "cd client && npm run build",
+    "start:prod": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
