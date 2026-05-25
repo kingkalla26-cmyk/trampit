@@ -4,7 +4,45 @@ const helmet  = require('helmet');
 const path    = require('path');
 const app     = express();
 
-app.set('trust proxy', 1); // נדרש כשרץ מאחורי nginx / Heroku / Render
+app.set('trust proxy', 1);
+
+const IS_PROD      = process.env.NODE_ENV === 'production';
+const ALLOWED_HOST = process.env.ALLOWED_HOST || null; // למשל: trampit.app
+
+// ─── HTTPS redirect (production בלבד) ────────────────────────────────────────
+if (IS_PROD) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
+// ─── CORS lockdown — API רק מה-origin של האפליקציה עצמה ─────────────────────
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+  const host   = req.headers.host;
+
+  // בקשות ישירות מהדפדפן (same-origin) — אין origin header, מותר
+  if (!origin) return next();
+
+  // בפיתוח — מאפשרים localhost בכל פורט
+  if (!IS_PROD && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return next();
+
+  // בproduction — מאפשרים רק את ה-host של השרת עצמו
+  const expectedOrigin = ALLOWED_HOST
+    ? `https://${ALLOWED_HOST}`
+    : `https://${host}`;
+
+  if (origin !== expectedOrigin) {
+    secLog('CORS_BLOCK', req, `origin=${origin}`);
+    return res.status(403).json({ error: 'גישה אסורה' });
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  next();
+});
 
 app.use(helmet({
   contentSecurityPolicy: {
