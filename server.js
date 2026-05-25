@@ -112,15 +112,15 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
     });
 
     const data = await response.json();
-    console.log('Groq status:', response.status);
 
     if (response.status === 429) {
       return res.status(429).json({ error: 'מכסת ה-API מלאה — נסה שוב בעוד דקה' });
     }
 
     if (!response.ok) {
-      console.error('Groq error:', JSON.stringify(data));
-      return res.status(response.status).json({ error: data.error?.message || 'שגיאה בשירות ה-AI' });
+      // לוג פנימי בלבד — לא חושפים פרטי Groq ללקוח
+      console.error('Groq error status:', response.status);
+      return res.status(502).json({ error: 'שגיאה בשירות ה-AI — נסה שוב' });
     }
 
     const text = data.choices?.[0]?.message?.content || '';
@@ -133,21 +133,18 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
 });
 
 // ─── /api/transit — נתוני תחבורה ציבורית מ-data.gov.il + הסדנה ───────────────
-const TRANSIT_TTL      = 30 * 60 * 1000; // 30 דקות
-const TRANSIT_MAX_KEYS = 200;            // מקסימום entries בו-זמנית
-let transitCache = {};
+const TRANSIT_TTL      = 30 * 60 * 1000;
+const TRANSIT_MAX_KEYS = 200;
+const transitCache = new Map(); // Map מונע prototype pollution (לא כמו object רגיל)
 
-// מנקה entries שפג תוקפם, ואם עדיין גדול מדי — מוחק הישנים ביותר
 function pruneTransitCache() {
   const now = Date.now();
-  for (const key of Object.keys(transitCache)) {
-    if (now - transitCache[key].time > TRANSIT_TTL) delete transitCache[key];
+  for (const [key, entry] of transitCache) {
+    if (now - entry.time > TRANSIT_TTL) transitCache.delete(key);
   }
-  const keys = Object.keys(transitCache);
-  if (keys.length > TRANSIT_MAX_KEYS) {
-    keys.sort((a, b) => transitCache[a].time - transitCache[b].time)
-        .slice(0, keys.length - TRANSIT_MAX_KEYS)
-        .forEach(k => delete transitCache[k]);
+  if (transitCache.size > TRANSIT_MAX_KEYS) {
+    const sorted = [...transitCache.entries()].sort((a, b) => a[1].time - b[1].time);
+    sorted.slice(0, transitCache.size - TRANSIT_MAX_KEYS).forEach(([k]) => transitCache.delete(k));
   }
 }
 
@@ -162,8 +159,9 @@ app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
   }
 
   const cacheKey = `${stop}_${destination || ''}`;
-  if (transitCache[cacheKey] && Date.now() - transitCache[cacheKey].time < TRANSIT_TTL) {
-    return res.json(transitCache[cacheKey].data);
+  const cached = transitCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < TRANSIT_TTL) {
+    return res.json(cached.data);
   }
   pruneTransitCache();
 
@@ -210,7 +208,7 @@ app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
       source: 'נתוני תחבורה ציבורית — ממשל פתוח ישראל + עמותת הסדנה',
     };
 
-    transitCache[cacheKey] = { data: result, time: Date.now() };
+    transitCache.set(cacheKey, { data: result, time: Date.now() });
     res.json(result);
 
   } catch (err) {
