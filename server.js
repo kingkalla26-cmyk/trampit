@@ -74,16 +74,23 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
   }
 
   try {
-    const groqMessages = messages.map(msg => {
-      if (typeof msg.content === 'string') {
-        return { role: msg.role, content: msg.content };
-      }
-      if (Array.isArray(msg.content)) {
-        const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
-        return { role: msg.role, content: text };
-      }
-      return { role: msg.role, content: String(msg.content) };
-    });
+    const ALLOWED_ROLES = new Set(['user', 'assistant']);
+    const groqMessages = messages
+      .filter(msg => ALLOWED_ROLES.has(msg.role)) // חוסם role: "system" מהלקוח
+      .map(msg => {
+        if (typeof msg.content === 'string') {
+          return { role: msg.role, content: msg.content.slice(0, 8000) };
+        }
+        if (Array.isArray(msg.content)) {
+          const text = msg.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+          return { role: msg.role, content: text.slice(0, 8000) };
+        }
+        return { role: msg.role, content: String(msg.content).slice(0, 8000) };
+      });
+
+    if (groqMessages.length === 0) {
+      return res.status(400).json({ error: 'בקשה לא תקינה' });
+    }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -122,7 +129,23 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
 });
 
 // ─── /api/transit — נתוני תחבורה ציבורית מ-data.gov.il + הסדנה ───────────────
+const TRANSIT_TTL      = 30 * 60 * 1000; // 30 דקות
+const TRANSIT_MAX_KEYS = 200;            // מקסימום entries בו-זמנית
 let transitCache = {};
+
+// מנקה entries שפג תוקפם, ואם עדיין גדול מדי — מוחק הישנים ביותר
+function pruneTransitCache() {
+  const now = Date.now();
+  for (const key of Object.keys(transitCache)) {
+    if (now - transitCache[key].time > TRANSIT_TTL) delete transitCache[key];
+  }
+  const keys = Object.keys(transitCache);
+  if (keys.length > TRANSIT_MAX_KEYS) {
+    keys.sort((a, b) => transitCache[a].time - transitCache[b].time)
+        .slice(0, keys.length - TRANSIT_MAX_KEYS)
+        .forEach(k => delete transitCache[k]);
+  }
+}
 
 app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
   const { stop, destination } = req.query;
@@ -135,9 +158,10 @@ app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
   }
 
   const cacheKey = `${stop}_${destination || ''}`;
-  if (transitCache[cacheKey] && Date.now() - transitCache[cacheKey].time < 30 * 60 * 1000) {
+  if (transitCache[cacheKey] && Date.now() - transitCache[cacheKey].time < TRANSIT_TTL) {
     return res.json(transitCache[cacheKey].data);
   }
+  pruneTransitCache();
 
   try {
     const stopName = encodeURIComponent(stop.trim());
