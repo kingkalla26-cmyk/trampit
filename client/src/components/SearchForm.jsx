@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef } from 'react';
 import AutocompleteInput from './AutocompleteInput.jsx';
 
 const NAV_PATTERNS = [/waze\.com/i, /waze:\/\//i, /maps\.google\./i, /goo\.gl\/maps/i, /maps\.app\.goo\.gl/i];
@@ -8,16 +8,8 @@ function isNavLink(url) {
   catch { return false; }
 }
 
-export default function SearchForm({ form, setForm, onAnalyze, loading }) {
+export default function SearchForm({ form, setForm, onAnalyze, loading, cities = [] }) {
   const fileInputRef = useRef();
-  const [cities, setCities] = useState([]);
-
-  useEffect(() => {
-    fetch('/api/cities')
-      .then(r => r.json())
-      .then(setCities)
-      .catch(() => {});
-  }, []);
 
   function handleFile(file) {
     if (!file) return;

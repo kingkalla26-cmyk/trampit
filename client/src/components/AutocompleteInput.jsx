@@ -1,12 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function AutocompleteInput({ value, onChange, placeholder, cities }) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const containerRef = useRef();
 
-  const filtered = value.trim().length < 1 ? [] :
-    cities.filter(c => c.includes(value.trim())).slice(0, 8);
+  const debouncedValue = useDebounce(value, 120);
+
+  const filtered = useMemo(() => {
+    const q = debouncedValue.trim();
+    if (q.length < 1) return [];
+    return cities.filter(c => c.includes(q)).slice(0, 8);
+  }, [debouncedValue, cities]);
 
   useEffect(() => {
     setHighlighted(0);

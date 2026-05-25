@@ -9,7 +9,7 @@ const INITIAL_FORM = {
   wazeLinkStatus: '', uploadedImage: null, imagePreview: null,
 };
 
-export default function Home() {
+export default function Home({ cities = [] }) {
   const [tab, setTab] = useState('search');
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
@@ -131,7 +131,7 @@ ${form.wazeLink ? 'קישור המסלול של הנהג: ' + form.wazeLink : ''
       <div style={s.content}>
         {tab === 'search' && !results && (
           <>
-            <SearchForm form={form} setForm={setForm} onAnalyze={handleAnalyze} loading={loading} />
+            <SearchForm form={form} setForm={setForm} onAnalyze={handleAnalyze} loading={loading} cities={cities} />
             {apiError && (
               <div style={s.errorBox}>
                 <div style={s.errorIcon}>⚠️</div>
