@@ -57,8 +57,9 @@ app.use(helmet({
   },
 }));
 
-// body parser רק על analyze — שאר הנתיבים GET ולא צריכים body
+// body parser
 app.use('/api/analyze', express.json({ limit: '2mb' }));
+app.use('/api/login',   express.json({ limit: '1kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Security logging ────────────────────────────────────────────────────────
@@ -69,12 +70,13 @@ function secLog(type, req, extra = '') {
 }
 
 // ─── Rate limiting פר IP ────────────────────────────────────────────────────
-const rateLimitMap = new Map(); // ip → { count, windowStart }
+const rateLimitMap = new Map();
 
 const RATE_LIMITS = {
-  analyze: { maxRequests: 10, windowMs: 60 * 1000 },  // 10/דקה — יקר (Groq)
-  transit: { maxRequests: 30, windowMs: 60 * 1000 },  // 30/דקה — API חיצוני
-  cities:  { maxRequests: 5,  windowMs: 60 * 1000 },  // 5/דקה — יש cache, אין סיבה לקרוא יותר
+  analyze: { maxRequests: 10, windowMs: 60 * 1000 },
+  transit: { maxRequests: 30, windowMs: 60 * 1000 },
+  cities:  { maxRequests: 5,  windowMs: 60 * 1000 },
+  login:   { maxRequests: 5,  windowMs: 60 * 1000 },
 };
 
 // מנקה entries ישנים כל 5 דקות כדי למנוע דליפת זיכרון
@@ -110,8 +112,76 @@ function makeRateLimit(tier) {
   };
 }
 
+// ─── Session auth ─────────────────────────────────────────────────────────────
+const crypto        = require('crypto');
+const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toString('hex');
+const APP_PASSWORD  = process.env.APP_PASSWORD  || null;
+const COOKIE_NAME   = 'trampit_sid';
+const SESSION_TTL   = 24 * 60 * 60 * 1000;
+
+const sessions = new Map();
+
+function issueSession(res) {
+  const token = crypto.randomBytes(24).toString('hex');
+  const sig   = crypto.createHmac('sha256', COOKIE_SECRET).update(token).digest('hex');
+  sessions.set(token, Date.now() + SESSION_TTL);
+  res.cookie(COOKIE_NAME, `${token}.${sig}`, {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: IS_PROD,
+    maxAge: SESSION_TTL,
+  });
+}
+
+function validateSession(req) {
+  if (!APP_PASSWORD) return true;
+  const raw = req.headers.cookie?.match(new RegExp(`${COOKIE_NAME}=([^;]+)`))?.[1];
+  if (!raw) return false;
+  const dotIdx = raw.lastIndexOf('.');
+  if (dotIdx === -1) return false;
+  const token = raw.slice(0, dotIdx);
+  const sig   = raw.slice(dotIdx + 1);
+  const expected = crypto.createHmac('sha256', COOKIE_SECRET).update(token).digest('hex');
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return false;
+  } catch { return false; }
+  const exp = sessions.get(token);
+  return exp && Date.now() < exp;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, exp] of sessions) {
+    if (now > exp) sessions.delete(token);
+  }
+}, 60 * 60 * 1000);
+
+function requireAuth(req, res, next) {
+  if (!validateSession(req)) {
+    secLog('UNAUTH', req);
+    return res.status(401).json({ error: 'נדרשת התחברות', loginRequired: true });
+  }
+  next();
+}
+
+app.post('/api/login', makeRateLimit('login'), (req, res) => {
+  const { password } = req.body || {};
+  if (!APP_PASSWORD) return res.json({ ok: true });
+  if (!password || password !== APP_PASSWORD) {
+    secLog('LOGIN_FAIL', req);
+    return res.status(401).json({ error: 'סיסמה שגויה' });
+  }
+  issueSession(res);
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  res.clearCookie(COOKIE_NAME);
+  res.json({ ok: true });
+});
+
 // ─── /api/analyze ────────────────────────────────────────────────────────────
-app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
+app.post('/api/analyze', requireAuth, makeRateLimit('analyze'), async (req, res) => {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
@@ -194,7 +264,7 @@ function pruneTransitCache() {
   }
 }
 
-app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
+app.get('/api/transit', requireAuth, makeRateLimit('transit'), async (req, res) => {
   const { stop, destination } = req.query;
 
   // תווים מותרים: עברית, לטינית, ספרות, רווח, מקף, גרש, נקודה, לוכסן
@@ -273,7 +343,7 @@ let citiesCache = null;
 let cacheTime   = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
-app.get('/api/cities', makeRateLimit('cities'), async (req, res) => {
+app.get('/api/cities', requireAuth, makeRateLimit('cities'), async (req, res) => {
   try {
     if (citiesCache && Date.now() - cacheTime < CACHE_TTL) {
       return res.json(citiesCache);
