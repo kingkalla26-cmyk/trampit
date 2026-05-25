@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import Home          from './pages/Home.jsx';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import SearchPage    from './pages/SearchPage.jsx';
+import MapPage       from './pages/MapPage.jsx';
 import LoginScreen   from './components/LoginScreen.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
@@ -32,7 +34,11 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <Home cities={cities} />
+      <Routes>
+        <Route path="/"      element={<SearchPage cities={cities} />} />
+        <Route path="/map"   element={<MapPage />} />
+        <Route path="*"      element={<Navigate to="/" replace />} />
+      </Routes>
     </ErrorBoundary>
   );
 }
