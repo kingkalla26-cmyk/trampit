@@ -1,0 +1,24 @@
+# סביבה
+.env
+.env.local
+.env.*.local
+
+# תלויות
+node_modules/
+client/node_modules/
+
+# build
+client/dist/
+client/dist-ssr/
+
+# לוגים ונתונים
+*.log
+reports.json
+
+# מערכת הפעלה
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
