@@ -23,6 +23,13 @@ app.use(helmet({
 app.use('/api/analyze', express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── Security logging ────────────────────────────────────────────────────────
+function secLog(type, req, extra = '') {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const ts = new Date().toISOString();
+  console.warn(`[SECURITY] ${ts} | ${type} | ip=${ip} | ${req.method} ${req.path}${extra ? ' | ' + extra : ''}`);
+}
+
 // ─── Rate limiting פר IP ────────────────────────────────────────────────────
 const rateLimitMap = new Map(); // ip → { count, windowStart }
 
@@ -56,6 +63,7 @@ function makeRateLimit(tier) {
     if (entry.count >= maxRequests) {
       const retryAfter = Math.ceil((windowMs - (now - entry.windowStart)) / 1000);
       res.setHeader('Retry-After', retryAfter);
+      secLog('RATE_LIMIT', req, `tier=${tier}`);
       return res.status(429).json({ error: `יותר מדי בקשות — נסה שוב בעוד ${retryAfter} שניות` });
     }
 
@@ -80,7 +88,7 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
   try {
     const ALLOWED_ROLES = new Set(['user', 'assistant']);
     const groqMessages = messages
-      .filter(msg => ALLOWED_ROLES.has(msg.role)) // חוסם role: "system" מהלקוח
+      .filter(msg => typeof msg.role === 'string' && ALLOWED_ROLES.has(msg.role))
       .map(msg => {
         if (typeof msg.content === 'string') {
           return { role: msg.role, content: msg.content.slice(0, 8000) };
@@ -151,11 +159,16 @@ function pruneTransitCache() {
 app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
   const { stop, destination } = req.query;
 
-  if (!stop || typeof stop !== 'string') {
-    return res.status(400).json({ error: 'חסר שם תחנה' });
+  // תווים מותרים: עברית, לטינית, ספרות, רווח, מקף, גרש, נקודה, לוכסן
+  const VALID_PLACE = /^[֐-׿a-zA-Z0-9 \-'.\/]{1,100}$/;
+
+  if (!stop || typeof stop !== 'string' || !VALID_PLACE.test(stop)) {
+    secLog('INVALID_INPUT', req, `stop="${stop?.slice(0,30)}"`);
+    return res.status(400).json({ error: 'שם תחנה לא תקין' });
   }
-  if (stop.length > 100 || (destination && destination.length > 100)) {
-    return res.status(400).json({ error: 'שם תחנה ארוך מדי' });
+  if (destination && (typeof destination !== 'string' || !VALID_PLACE.test(destination))) {
+    secLog('INVALID_INPUT', req, `destination="${destination?.slice(0,30)}"`);
+    return res.status(400).json({ error: 'שם יעד לא תקין' });
   }
 
   const cacheKey = `${stop}_${destination || ''}`;
