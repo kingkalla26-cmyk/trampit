@@ -21,30 +21,47 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Rate limiting פר IP ────────────────────────────────────────────────────
 const rateLimitMap = new Map(); // ip → { count, windowStart }
-const RATE_LIMIT   = { maxRequests: 10, windowMs: 60 * 1000 }; // 10 בקשות לדקה
 
-function rateLimit(req, res, next) {
-  const ip  = req.ip || req.connection.remoteAddress || 'unknown';
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
+const RATE_LIMITS = {
+  analyze: { maxRequests: 10, windowMs: 60 * 1000 },  // 10/דקה — יקר (Groq)
+  transit: { maxRequests: 30, windowMs: 60 * 1000 },  // 30/דקה — API חיצוני
+  cities:  { maxRequests: 5,  windowMs: 60 * 1000 },  // 5/דקה — יש cache, אין סיבה לקרוא יותר
+};
 
-  if (!entry || now - entry.windowStart > RATE_LIMIT.windowMs) {
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return next();
+// מנקה entries ישנים כל 5 דקות כדי למנוע דליפת זיכרון
+setInterval(() => {
+  const cutoff = Date.now() - 5 * 60 * 1000;
+  for (const [ip, entry] of rateLimitMap) {
+    if (entry.windowStart < cutoff) rateLimitMap.delete(ip);
   }
+}, 5 * 60 * 1000);
 
-  if (entry.count >= RATE_LIMIT.maxRequests) {
-    const retryAfter = Math.ceil((RATE_LIMIT.windowMs - (now - entry.windowStart)) / 1000);
-    res.setHeader('Retry-After', retryAfter);
-    return res.status(429).json({ error: `יותר מדי בקשות — נסה שוב בעוד ${retryAfter} שניות` });
-  }
+function makeRateLimit(tier) {
+  const { maxRequests, windowMs } = RATE_LIMITS[tier];
+  return function rateLimit(req, res, next) {
+    const ip  = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    const key = `${tier}:${ip}`;
+    const entry = rateLimitMap.get(key);
 
-  entry.count++;
-  next();
+    if (!entry || now - entry.windowStart > windowMs) {
+      rateLimitMap.set(key, { count: 1, windowStart: now });
+      return next();
+    }
+
+    if (entry.count >= maxRequests) {
+      const retryAfter = Math.ceil((windowMs - (now - entry.windowStart)) / 1000);
+      res.setHeader('Retry-After', retryAfter);
+      return res.status(429).json({ error: `יותר מדי בקשות — נסה שוב בעוד ${retryAfter} שניות` });
+    }
+
+    entry.count++;
+    next();
+  };
 }
 
 // ─── /api/analyze ────────────────────────────────────────────────────────────
-app.post('/api/analyze', rateLimit, async (req, res) => {
+app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
@@ -107,7 +124,7 @@ app.post('/api/analyze', rateLimit, async (req, res) => {
 // ─── /api/transit — נתוני תחבורה ציבורית מ-data.gov.il + הסדנה ───────────────
 let transitCache = {};
 
-app.get('/api/transit', async (req, res) => {
+app.get('/api/transit', makeRateLimit('transit'), async (req, res) => {
   const { stop, destination } = req.query;
 
   if (!stop || typeof stop !== 'string') {
@@ -179,7 +196,7 @@ let citiesCache = null;
 let cacheTime   = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
-app.get('/api/cities', async (req, res) => {
+app.get('/api/cities', makeRateLimit('cities'), async (req, res) => {
   try {
     if (citiesCache && Date.now() - cacheTime < CACHE_TTL) {
       return res.json(citiesCache);
