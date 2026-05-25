@@ -4,6 +4,8 @@ const helmet  = require('helmet');
 const path    = require('path');
 const app     = express();
 
+app.set('trust proxy', 1); // נדרש כשרץ מאחורי nginx / Heroku / Render
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -16,7 +18,9 @@ app.use(helmet({
     },
   },
 }));
-app.use(express.json({ limit: '10mb' }));
+
+// body parser רק על analyze — שאר הנתיבים GET ולא צריכים body
+app.use('/api/analyze', express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Rate limiting פר IP ────────────────────────────────────────────────────
@@ -69,7 +73,7 @@ app.post('/api/analyze', makeRateLimit('analyze'), async (req, res) => {
   }
 
   const messages = req.body.messages;
-  if (!Array.isArray(messages) || messages.length === 0) {
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > 20) {
     return res.status(400).json({ error: 'בקשה לא תקינה' });
   }
 
