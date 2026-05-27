@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReportSpot from './ReportSpot.jsx';
 
-export default function Layout({ children }) {
+export default function Layout({ children, mapMode = false }) {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
   const [reportOpen, setReportOpen] = useState(false);
@@ -29,7 +29,7 @@ export default function Layout({ children }) {
         >🚗 בדרך</button>
       </nav>
 
-      <main style={s.content}>
+      <main style={{ ...s.content, overflow: mapMode ? 'hidden' : 'auto' }}>
         {children}
       </main>
 

@@ -19,7 +19,7 @@ export default function MapPage() {
   const panelH = expanded ? '58vh' : 170;
 
   return (
-    <Layout>
+    <Layout mapMode>
       {/* מפה — ממלאת את כל השטח הנותר */}
       <div style={s.mapWrap}>
         <MapComponent spots={spots} points={points} />
