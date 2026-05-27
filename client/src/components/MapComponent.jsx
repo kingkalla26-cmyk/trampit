@@ -5,25 +5,26 @@ import L from 'leaflet';
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const JERUSALEM = [31.7683, 35.2137];
-const STAR_MAP  = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '⭐⭐⭐⭐', 5: '⭐⭐⭐⭐⭐' };
+const ISRAEL   = [31.5, 35.0];
+const STAR_MAP = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '⭐⭐⭐⭐', 5: '⭐⭐⭐⭐⭐' };
 
-function circleIcon(color) {
+function circleIcon(color, size = 20) {
   return L.divIcon({
-    html: `<div style="background:${color};width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
+    html: `<div style="background:${color};width:${size}px;height:${size}px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
     className: '',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -12],
+    iconSize:   [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor:[0, -size / 2 - 2],
   });
 }
 
-const spotIcon = circleIcon('#2563eb');
-const userIcon = circleIcon('#ef4444');
+const userIcon  = circleIcon('#ef4444', 18);
+const spotIcon  = circleIcon('#2563eb', 16);
+const pointIcon = circleIcon('#059669', 14);
 
 function RecenterMap({ position, zoom }) {
   const map = useMap();
@@ -31,10 +32,10 @@ function RecenterMap({ position, zoom }) {
   return null;
 }
 
-export default function MapComponent({ spots = [] }) {
-  const [position, setPosition] = useState(JERUSALEM);
-  const [hasGPS, setHasGPS]     = useState(false);
-  const [loading, setLoading]   = useState(true);
+export default function MapComponent({ spots = [], points = [] }) {
+  const [position, setPosition] = useState(ISRAEL);
+  const [hasGPS,   setHasGPS]   = useState(false);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     if (!navigator.geolocation) { setLoading(false); return; }
@@ -50,28 +51,53 @@ export default function MapComponent({ spots = [] }) {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  const spotsOnMap = spots.filter(s => s.coordinates?.lat && s.coordinates?.lng);
-
   return (
-    <div style={{ position: 'relative', flex: 1 }}>
+    <div style={styles.wrap}>
       {loading && <div style={styles.overlay}>מאתר מיקום...</div>}
-      {!loading && !hasGPS && (
-        <div style={styles.gpsBanner}>📍 מיקום לא זמין — מציג ישראל</div>
-      )}
 
-      <MapContainer center={JERUSALEM} zoom={8} style={{ width: '100%', height: '100%' }}>
+      <MapContainer
+        center={ISRAEL}
+        zoom={8}
+        style={{ width: '100%', height: '100%' }}
+        zoomControl={true}
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        <RecenterMap position={position} zoom={hasGPS ? 14 : 8} />
+        <RecenterMap position={position} zoom={hasGPS ? 13 : 8} />
 
+        {/* מיקום המשתמש */}
         <Marker position={position} icon={userIcon}>
-          <Popup>{hasGPS ? '📍 המיקום שלך' : '📍 ירושלים (ברירת מחדל)'}</Popup>
+          <Popup><b>{hasGPS ? '📍 המיקום שלך' : '📍 ישראל'}</b></Popup>
         </Marker>
 
-        {spotsOnMap.map(spot => (
+        {/* נקודות טרמפ מאומתות מה-DB */}
+        {points.map(p => (
+          <Marker
+            key={p.id}
+            position={[p.coordinates.lat, p.coordinates.lng]}
+            icon={pointIcon}
+          >
+            <Popup>
+              <div style={{ direction: 'rtl', textAlign: 'right', minWidth: 150 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 2 }}>
+                  כיוון: {p.direction} · כביש {p.currentRoad || ''}
+                </div>
+                {p.activeBusLinesCount > 0 && (
+                  <div style={{ fontSize: 12, color: '#059669' }}>
+                    🚌 {p.activeBusLinesCount} קווים פעילים
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* נקודות קהילתיות */}
+        {spots.filter(s => s.coordinates?.lat && s.coordinates?.lng).map(spot => (
           <Marker
             key={spot.id}
             position={[spot.coordinates.lat, spot.coordinates.lng]}
@@ -89,21 +115,37 @@ export default function MapComponent({ spots = [] }) {
           </Marker>
         ))}
       </MapContainer>
+
+      {/* מקרא */}
+      <div style={styles.legend}>
+        <span style={styles.legendItem}><span style={{ ...styles.dot, background: '#ef4444' }} />אתה</span>
+        <span style={styles.legendItem}><span style={{ ...styles.dot, background: '#059669' }} />נקודת טרמפ</span>
+        <span style={styles.legendItem}><span style={{ ...styles.dot, background: '#2563eb' }} />קהילה</span>
+      </div>
     </div>
   );
 }
 
 const styles = {
+  wrap: {
+    position: 'relative',
+    height: '45vh',
+    minHeight: 280,
+    flexShrink: 0,
+  },
   overlay: {
-    position: 'absolute', inset: 0,
-    background: 'rgba(13,15,20,0.8)',
+    position: 'absolute', inset: 0, zIndex: 1000,
+    background: 'rgba(13,15,20,0.7)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 1000, fontSize: 16, color: '#f0f2f7',
+    fontSize: 15, color: '#f0f2f7',
   },
-  gpsBanner: {
-    position: 'absolute', top: 12, right: 12, zIndex: 1000,
-    background: 'rgba(13,15,20,0.85)', color: '#fbbf24',
-    padding: '8px 14px', borderRadius: 8, fontSize: 13,
-    border: '1px solid rgba(251,191,36,0.3)',
+  legend: {
+    position: 'absolute', bottom: 10, right: 10, zIndex: 1000,
+    background: 'rgba(255,255,255,0.92)',
+    borderRadius: 8, padding: '6px 10px',
+    display: 'flex', gap: 10, fontSize: 12, color: '#1f2937',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
   },
+  legendItem: { display: 'flex', alignItems: 'center', gap: 4 },
+  dot: { width: 10, height: 10, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
 };

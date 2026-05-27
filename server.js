@@ -380,6 +380,23 @@ app.post('/api/spots', makeRateLimit('spots'), express.json({ limit: '2kb' }), (
   res.json({ ok: true, spot });
 });
 
+// ─── /api/points — נקודות טרמפ מאומתות מה-DB ────────────────────────────────
+app.get('/api/points', requireAuth, (req, res) => {
+  const points = trampitDb.points
+    .filter(p => p.safetyRating !== 'dangerous')
+    .map(p => ({
+      id:          p.id,
+      name:        p.name,
+      coordinates: p.coordinates,
+      roadType:    p.roadType,
+      direction:   p.direction,
+      transitType: p.transitType,
+      activeBusLinesCount: p.activeBusLinesCount,
+      servedDestinations:  p.servedDestinations,
+    }));
+  res.json(points);
+});
+
 // ─── /api/decision — מנוע החלטות נסיעה פעילה ────────────────────────────────
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371e3;

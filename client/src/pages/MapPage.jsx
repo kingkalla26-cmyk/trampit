@@ -5,18 +5,19 @@ import MapComponent from '../components/MapComponent.jsx';
 const STAR_MAP = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '⭐⭐⭐⭐', 5: '⭐⭐⭐⭐⭐' };
 
 export default function MapPage() {
-  const [spots, setSpots] = useState([]);
+  const [spots,  setSpots]  = useState([]);
+  const [points, setPoints] = useState([]);
 
   useEffect(() => {
-    fetch('/api/spots', { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => Array.isArray(d) && setSpots(d))
-      .catch(() => {});
+    fetch('/api/spots',  { credentials: 'include' })
+      .then(r => r.json()).then(d => Array.isArray(d) && setSpots(d)).catch(() => {});
+    fetch('/api/points', { credentials: 'include' })
+      .then(r => r.json()).then(d => Array.isArray(d) && setPoints(d)).catch(() => {});
   }, []);
 
   return (
     <Layout>
-      <MapComponent spots={spots} />
+      <MapComponent spots={spots} points={points} />
 
       <div style={s.panel}>
         <div style={s.panelHeader}>
