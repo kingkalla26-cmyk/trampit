@@ -129,9 +129,9 @@ export default function MapComponent({ spots = [], points = [] }) {
 const styles = {
   wrap: {
     position: 'relative',
-    height: '45vh',
-    minHeight: 280,
-    flexShrink: 0,
+    width: '100%',
+    height: '100%',
+    minHeight: 200,
   },
   overlay: {
     position: 'absolute', inset: 0, zIndex: 1000,

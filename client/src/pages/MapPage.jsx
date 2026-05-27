@@ -17,7 +17,9 @@ export default function MapPage() {
 
   return (
     <Layout>
-      <MapComponent spots={spots} points={points} />
+      <div style={s.mapWrap}>
+        <MapComponent spots={spots} points={points} />
+      </div>
 
       <div style={s.panel}>
         <div style={s.panelHeader}>
@@ -58,7 +60,8 @@ export default function MapPage() {
 }
 
 const s = {
-  panel:       { background: '#f8fafc', borderTop: '1px solid #e5e7eb', padding: '16px 16px 80px' },
+  mapWrap:     { flex: 1, minHeight: 0, position: 'relative' },
+  panel:       { flexShrink: 0, height: 220, overflowY: 'auto', background: '#f8fafc', borderTop: '1px solid #e5e7eb', padding: '12px 16px 80px' },
   panelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   panelTitle:  { fontSize: 15, fontWeight: 700, color: '#1f2937' },
   count:       { fontSize: 12, color: '#4b5563', background: '#e5e7eb', borderRadius: 12, padding: '2px 10px' },
