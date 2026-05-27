@@ -11,12 +11,9 @@ function useDebounce(value, delay) {
 
 async function reverseGeocode(lat, lng) {
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=he`,
-      { headers: { 'Accept-Language': 'he' } }
-    );
+    const res  = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`, { credentials: 'include' });
     const data = await res.json();
-    return data.address?.city || data.address?.town || data.address?.village || null;
+    return data.city || null;
   } catch {
     return null;
   }

@@ -380,6 +380,38 @@ app.post('/api/spots', makeRateLimit('spots'), express.json({ limit: '2kb' }), (
   res.json({ ok: true, spot });
 });
 
+// ─── /api/geocode — reverse geocoding דרך השרת ──────────────────────────────
+app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+  if (isNaN(lat) || isNaN(lng)) return res.status(400).json({ error: 'חסרים פרמטרים' });
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=he`,
+      { headers: { 'User-Agent': 'TrampitApp/1.0', 'Accept-Language': 'he' },
+        signal: AbortSignal.timeout(8000) }
+    );
+    const data = await response.json();
+    const raw = data.address?.city || data.address?.town || data.address?.village || data.address?.suburb || null;
+    if (!raw) return res.json({ city: null });
+
+    // מחפש התאמה ברשימת הערים הממשלתית
+    const cities = citiesCache || [];
+    const normalize = s => s.replace(/["״-]/g, '').replace(/\s+/g, ' ').trim();
+    const normRaw = normalize(raw);
+    const match = cities.find(c => {
+      const nc = normalize(c);
+      return nc === normRaw || nc.includes(normRaw) || normRaw.includes(nc);
+    });
+
+    res.json({ city: match || raw });
+  } catch (err) {
+    console.error('[geocode]', err.message);
+    res.status(500).json({ error: 'שגיאת geocoding' });
+  }
+});
+
 // ─── /api/points — נקודות טרמפ מאומתות מה-DB ────────────────────────────────
 app.get('/api/points', requireAuth, (req, res) => {
   const points = trampitDb.points
