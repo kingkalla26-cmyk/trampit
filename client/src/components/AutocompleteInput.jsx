@@ -13,7 +13,7 @@ async function reverseGeocode(lat, lng) {
   try {
     const res  = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`, { credentials: 'include' });
     const data = await res.json();
-    return data.city || null;
+    return data.address || data.city || null;
   } catch {
     return null;
   }
@@ -65,30 +65,27 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
     const done = async (pos) => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       watchId = -1;
-      const city = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-      if (city) {
-        const match = cities.find(c => c.includes(city) || city.includes(c)) || city;
-        onChange(match);
-      }
+      const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      if (address) onChange(address);
       setLocLoading(false);
     };
 
-    // Wait up to 10s for a fix ≤100m; use best available on timeout
+    // Wait up to 15s for a fix ≤30m; use best available on timeout
     const timer = setTimeout(() => {
       if (watchId !== null && watchId !== -1) {
         navigator.geolocation.clearWatch(watchId);
         watchId = -1;
         if (best) done(best); else setLocLoading(false);
       }
-    }, 10000);
+    }, 15000);
 
     watchId = navigator.geolocation.watchPosition(
       pos => {
         best = pos;
-        if (pos.coords.accuracy <= 100) { clearTimeout(timer); done(pos); }
+        if (pos.coords.accuracy <= 30) { clearTimeout(timer); done(pos); }
       },
       () => { clearTimeout(timer); setLocLoading(false); },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
   }
 

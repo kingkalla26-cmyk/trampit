@@ -394,19 +394,29 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
     );
     const data = await response.json();
     const a = data.address || {};
-    const raw = a.city || a.town || a.city_district || a.village || a.quarter || a.neighbourhood || a.suburb || null;
-    if (!raw) return res.json({ city: null });
 
-    // מחפש התאמה ברשימת הערים הממשלתית
+    // שם העיר/יישוב
+    const cityRaw = a.city || a.town || a.city_district || a.village || a.quarter || a.neighbourhood || a.suburb || null;
+    if (!cityRaw) return res.json({ city: null, address: null });
+
+    // התאמה לרשימת הערים הממשלתית
     const cities = citiesCache || [];
-    const normalize = s => s.replace(/["״-]/g, '').replace(/\s+/g, ' ').trim();
-    const normRaw = normalize(raw);
-    const match = cities.find(c => {
+    const normalize = s => s.replace(/["״']/g, '').replace(/\s+/g, ' ').trim();
+    const normRaw = normalize(cityRaw);
+    const cityMatch = cities.find(c => {
       const nc = normalize(c);
       return nc === normRaw || nc.includes(normRaw) || normRaw.includes(nc);
-    });
+    }) || cityRaw;
 
-    res.json({ city: match || raw });
+    // כתובת מלאה: רחוב + מספר בית + עיר
+    const road        = a.road || a.pedestrian || a.footway || a.path || '';
+    const houseNumber = a.house_number || '';
+    let address = '';
+    if (road && houseNumber) address = `${road} ${houseNumber}, ${cityMatch}`;
+    else if (road)           address = `${road}, ${cityMatch}`;
+    else                     address = cityMatch;
+
+    res.json({ city: cityMatch, address });
   } catch (err) {
     console.error('[geocode]', err.message);
     res.status(500).json({ error: 'שגיאת geocoding' });
