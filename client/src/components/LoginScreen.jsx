@@ -33,7 +33,7 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div style={s.root}>
       <div style={s.card}>
-        <div style={s.logo}>🛣 טרמפ<span style={{ color: '#4f9eff' }}>יט</span></div>
+        <div style={s.logo}>🛣 טרמפ<span style={{ color: '#2563eb' }}>יט</span></div>
         <div style={s.sub}>הזן סיסמה להמשך</div>
 
         <form onSubmit={handleSubmit} style={s.form}>
@@ -57,12 +57,12 @@ export default function LoginScreen({ onLogin }) {
 }
 
 const s = {
-  root:  { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0d0f14' },
-  card:  { background: '#161a22', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '40px 32px', width: '100%', maxWidth: 360, textAlign: 'center' },
-  logo:  { fontSize: 28, fontWeight: 700, color: '#f0f2f7', marginBottom: 8 },
-  sub:   { fontSize: 14, color: '#7a8499', marginBottom: 28 },
+  root:  { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f3f4f6' },
+  card:  { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 20, padding: '40px 32px', width: '100%', maxWidth: 360, textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+  logo:  { fontSize: 28, fontWeight: 700, color: '#1f2937', marginBottom: 8 },
+  sub:   { fontSize: 14, color: '#4b5563', marginBottom: 28 },
   form:  { display: 'flex', flexDirection: 'column', gap: 12 },
-  input: { background: '#1e2330', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: '14px 16px', color: '#f0f2f7', fontSize: 16, fontFamily: 'Heebo, sans-serif', outline: 'none', direction: 'rtl', textAlign: 'right' },
-  error: { color: '#f87171', fontSize: 13 },
+  input: { background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 10, padding: '14px 16px', color: '#1f2937', fontSize: 16, fontFamily: 'Heebo, sans-serif', outline: 'none', direction: 'rtl', textAlign: 'right' },
+  error: { color: '#dc2626', fontSize: 13 },
   btn:   { background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', border: 'none', borderRadius: 10, padding: '14px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Heebo, sans-serif' },
 };

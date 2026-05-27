@@ -45,16 +45,13 @@ ${form.wazeLink ? 'קישור המסלול של הנהג: ' + form.wazeLink : ''
       "exitDistance": "ק\\"מ מנקודת המוצא",
       "time": "זמן משוער ל${form.destination}",
       "cost": "עלות משוערת",
-      "transport": ["אוטובוס 480"],
       "trampScore": 8,
-      "note": "הערה קצרה",
       "best": true
     }
   ],
   "hotspots": [
     { "name": "שם הנקודה", "direction": "לאן מקבלים טרמפ", "heat": 4, "bestTime": "שעות פעיל" }
   ],
-  "aiInsight": "תובנה קצרה על המסלול"
 }`,
     });
 
@@ -68,6 +65,7 @@ ${form.wazeLink ? 'קישור המסלול של הנהג: ' + form.wazeLink : ''
       const data = await res.json();
 
       if (res.status === 401) { setApiError('נדרשת התחברות מחדש — רענן את הדף.'); return null; }
+      if (res.status === 429) { setApiError('מכסת ה-API מלאה — נסה שוב בעוד דקה.'); return null; }
       if (data.error)         { setApiError(data.error); return null; }
 
       const text  = (data.content || []).map(b => b.text || '').join('');
@@ -78,8 +76,7 @@ ${form.wazeLink ? 'קישור המסלול של הנהג: ' + form.wazeLink : ''
       return result;
     } catch (err) {
       const msg = err?.message || '';
-      if (msg.includes('429'))     setApiError('מכסת ה-API מלאה — נסה שוב בעוד דקה.');
-      else if (msg.includes('timeout') || msg.includes('abort')) setApiError('השרת לא הגיב בזמן — נסה שוב.');
+      if (msg.includes('timeout') || msg.includes('abort')) setApiError('השרת לא הגיב בזמן — נסה שוב.');
       else                         setApiError('שגיאה בניתוח — נסה שוב.');
       return null;
     } finally {

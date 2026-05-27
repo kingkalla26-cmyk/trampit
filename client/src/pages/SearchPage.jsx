@@ -58,9 +58,9 @@ export default function SearchPage({ cities = [] }) {
 }
 
 const s = {
-  errorBox:   { margin: '0 16px 16px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 12, padding: 16, display: 'flex', gap: 12, alignItems: 'flex-start' },
+  errorBox:   { margin: '0 16px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, display: 'flex', gap: 12, alignItems: 'flex-start' },
   errorIcon:  { fontSize: 20, flexShrink: 0 },
-  errorTitle: { fontSize: 14, fontWeight: 700, color: '#f87171', marginBottom: 4 },
-  errorMsg:   { fontSize: 13, color: '#fca5a5', lineHeight: 1.5 },
-  toast:      { position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1e2330', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '12px 20px', fontSize: 14, color: '#f0f2f7', zIndex: 9999, whiteSpace: 'nowrap' },
+  errorTitle: { fontSize: 14, fontWeight: 700, color: '#dc2626', marginBottom: 4 },
+  errorMsg:   { fontSize: 13, color: '#ef4444', lineHeight: 1.5 },
+  toast:      { position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1f2937', border: '1px solid #374151', borderRadius: 10, padding: '12px 20px', fontSize: 14, color: '#f9fafb', zIndex: 9999, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' },
 };

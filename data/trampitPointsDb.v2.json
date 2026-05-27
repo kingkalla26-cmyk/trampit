@@ -1,0 +1,454 @@
+{
+  "systemVersion": "2.0.0",
+  "points": [
+    {
+      "id": "mhlf_mesilat_zion_north",
+      "name": "מחלף מסילת ציון (צפון)",
+      "stopId": 5483,
+      "coordinates": { "lat": 31.8105, "lng": 35.0212 },
+      "currentRoad": 38,
+      "roadType": "interchange",
+      "direction": "north",
+      "physicalConnections": [38, 1],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 2,
+      "servedDestinations": ["ירושלים", "בית שמש", "גבעת שאול", "מחוז ירושלים"],
+      "roadToDestinations": {
+        "38": ["ירושלים", "גבעת שאול", "בית שמש"],
+        "1":  ["תל אביב", "רמלה", "לוד", "מרכז"]
+      }
+    },
+    {
+      "id": "chomet_shimshon_north",
+      "name": "צומת שמשון (לצפון)",
+      "stopId": 5556,
+      "coordinates": { "lat": 31.7778, "lng": 34.9889 },
+      "currentRoad": 38,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [38, 44],
+      "safetyRating": "safe",
+      "transitType": "local",
+      "activeBusLinesCount": 1,
+      "servedDestinations": ["תל אביב", "רחובות", "גדרה", "יבנה", "מרכז"],
+      "roadToDestinations": {
+        "38": ["תל אביב", "רחובות", "מרכז"],
+        "44": ["קריית גת", "אשדוד", "גדרה", "דרום"]
+      }
+    },
+    {
+      "id": "mhlf_latrun_main",
+      "name": "מחלף לטרון (מפלס תחתון כביש 3)",
+      "stopId": 65163,
+      "coordinates": { "lat": 31.8392, "lng": 34.9785 },
+      "currentRoad": 3,
+      "roadType": "interchange",
+      "direction": "east",
+      "physicalConnections": [3, 1],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 12,
+      "servedDestinations": ["תל אביב", "רמלה", "לוד", "מרכז", "בן גוריון", "ירושלים", "בית שמש"],
+      "roadToDestinations": {
+        "1": ["תל אביב", "רמלה", "לוד", "מרכז", "בן גוריון"],
+        "3": ["בית שמש", "גדרה", "קריית גת", "דרום"]
+      }
+    },
+    {
+      "id": "chomet_kesem_south",
+      "name": "צומת קסם (כביש 444 רמפת רכבת)",
+      "stopId": 32174,
+      "coordinates": { "lat": 32.1121, "lng": 34.9272 },
+      "currentRoad": 444,
+      "roadType": "service_road",
+      "direction": "south",
+      "physicalConnections": [444, 6],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 18,
+      "servedDestinations": ["נתניה", "חיפה", "צפון", "כרכור", "קיסריה", "כביש 6"],
+      "roadToDestinations": {
+        "444": ["ראש העין", "פתח תקווה", "תל אביב"],
+        "6":   ["נתניה", "חיפה", "צפון", "כרכור", "קיסריה"]
+      }
+    },
+    {
+      "id": "mhlf_lehavim_junction",
+      "name": "מחלף להבים (כביש 40)",
+      "stopId": 15164,
+      "coordinates": { "lat": 31.3734, "lng": 34.8142 },
+      "currentRoad": 40,
+      "roadType": "highway",
+      "direction": "south",
+      "physicalConnections": [40, 31],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 6,
+      "servedDestinations": ["באר שבע", "נגב", "דימונה", "ערד", "אילת", "דרום"],
+      "roadToDestinations": {
+        "40": ["באר שבע", "נגב", "דרום"],
+        "31": ["דימונה", "ערד", "אילת"]
+      }
+    },
+    {
+      "id": "chomet_nachshon_west",
+      "name": "צומת נחשון (כביש 44 למערב)",
+      "stopId": 33389,
+      "coordinates": { "lat": 31.8239, "lng": 34.9197 },
+      "currentRoad": 44,
+      "roadType": "urban_junction",
+      "direction": "west",
+      "physicalConnections": [44, 3],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 4,
+      "servedDestinations": ["בית שמש", "גדרה", "אשדוד", "אשקלון", "דרום"],
+      "roadToDestinations": {
+        "44": ["גדרה", "יבנה", "אשדוד"],
+        "3":  ["בית שמש", "קריית גת", "אשקלון", "דרום"]
+      }
+    },
+    {
+      "id": "mhlf_chemed_east",
+      "name": "מחלף חמד (למזרח/ירושלים)",
+      "stopId": 5092,
+      "coordinates": { "lat": 31.8012, "lng": 35.1245 },
+      "currentRoad": 1,
+      "roadType": "interchange",
+      "direction": "east",
+      "physicalConnections": [1, 3975],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 25,
+      "servedDestinations": ["ירושלים", "תל אביב", "מרכז", "מחוז ירושלים"],
+      "roadToDestinations": {
+        "1":    ["ירושלים", "מחוז ירושלים"],
+        "3975": ["תל אביב", "מרכז"]
+      }
+    },
+    {
+      "id": "mhlf_harel_west",
+      "name": "מחלף הראל (למערב/תל אביב)",
+      "stopId": 5038,
+      "coordinates": { "lat": 31.7994, "lng": 35.1481 },
+      "currentRoad": 1,
+      "roadType": "interchange",
+      "direction": "west",
+      "physicalConnections": [1, 3965],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 22,
+      "servedDestinations": ["ירושלים", "תל אביב", "מרכז", "רמלה", "לוד"],
+      "roadToDestinations": {
+        "1":    ["תל אביב", "רמלה", "לוד", "מרכז"],
+        "3965": ["ירושלים"]
+      }
+    },
+    {
+      "id": "chomet_shilat_north",
+      "name": "צומת שילת (לצפון/כביש 446)",
+      "stopId": 34057,
+      "coordinates": { "lat": 31.9056, "lng": 35.0118 },
+      "currentRoad": 443,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [443, 446],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 15,
+      "servedDestinations": ["מודיעין", "ירושלים", "רמלה", "לוד", "מרכז"],
+      "roadToDestinations": {
+        "443": ["ירושלים", "מודיעין"],
+        "446": ["רמלה", "לוד", "מרכז"]
+      }
+    },
+    {
+      "id": "chomet_el_al_east",
+      "name": "צומת אל על (למזרח)",
+      "stopId": 31215,
+      "coordinates": { "lat": 32.0019, "lng": 34.9124 },
+      "currentRoad": 40,
+      "roadType": "urban_junction",
+      "direction": "east",
+      "physicalConnections": [40, 46, 453],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 14,
+      "servedDestinations": ["ראש העין", "פתח תקווה", "תל אביב", "מרכז"],
+      "roadToDestinations": {
+        "40":  ["באר שבע", "נגב", "דרום"],
+        "46":  ["ראש העין", "פתח תקווה"],
+        "453": ["תל אביב", "מרכז"]
+      }
+    },
+    {
+      "id": "chomet_tapuach_north",
+      "name": "צומת תפוח (לצפון)",
+      "stopId": 64012,
+      "coordinates": { "lat": 32.1023, "lng": 35.2591 },
+      "currentRoad": 60,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [60, 505],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 8,
+      "servedDestinations": ["שכם", "שומרון", "צפון", "נבלוס"],
+      "roadToDestinations": {
+        "60":  ["שכם", "שומרון", "צפון"],
+        "505": ["אריאל", "מרכז"]
+      }
+    },
+    {
+      "id": "mhlf_anava_east_main",
+      "name": "מחלף ענבה (נתיב מהיר ראשי)",
+      "stopId": 0,
+      "coordinates": { "lat": 31.8795, "lng": 34.9351 },
+      "currentRoad": 1,
+      "roadType": "highway",
+      "direction": "east",
+      "physicalConnections": [1, 6, 431],
+      "safetyRating": "dangerous",
+      "transitType": "intercity",
+      "activeBusLinesCount": 0,
+      "servedDestinations": [],
+      "roadToDestinations": {}
+    },
+    {
+      "id": "mhlf_yagur_north",
+      "name": "מחלף יגור (לצפון כביש 75)",
+      "stopId": 41416,
+      "coordinates": { "lat": 32.7423, "lng": 35.0761 },
+      "currentRoad": 75,
+      "roadType": "interchange",
+      "direction": "north",
+      "physicalConnections": [75, 70, 752],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 19,
+      "servedDestinations": ["חיפה", "נצרת", "עפולה", "צפון", "גליל"],
+      "roadToDestinations": {
+        "75":  ["חיפה", "קריות"],
+        "70":  ["נצרת", "עפולה", "גליל"],
+        "752": ["זכרון יעקב", "חדרה"]
+      }
+    },
+    {
+      "id": "chomet_golani_east",
+      "name": "מחלף גולני (למזרח כביש 77)",
+      "stopId": 52458,
+      "coordinates": { "lat": 32.7752, "lng": 35.4139 },
+      "currentRoad": 77,
+      "roadType": "interchange",
+      "direction": "east",
+      "physicalConnections": [77, 65],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 11,
+      "servedDestinations": ["טבריה", "נצרת", "עפולה", "גליל", "צפון"],
+      "roadToDestinations": {
+        "77": ["טבריה", "כנרת", "גולן"],
+        "65": ["עפולה", "נצרת", "מגידו", "מרכז"]
+      }
+    },
+    {
+      "id": "chomet_beit_kama_south",
+      "name": "צומת בית קמה (לדרום)",
+      "stopId": 14035,
+      "coordinates": { "lat": 31.4441, "lng": 34.7618 },
+      "currentRoad": 40,
+      "roadType": "urban_junction",
+      "direction": "south",
+      "physicalConnections": [40, 293, 6],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 9,
+      "servedDestinations": ["באר שבע", "קריית גת", "אשקלון", "דרום"],
+      "roadToDestinations": {
+        "40":  ["באר שבע", "נגב", "דרום"],
+        "293": ["קריית גת", "אשקלון"],
+        "6":   ["תל אביב", "מרכז", "צפון"]
+      }
+    },
+    {
+      "id": "chomet_plugot_east",
+      "name": "צומת פלוגות (למזרח כביש 35)",
+      "stopId": 11337,
+      "coordinates": { "lat": 31.6312, "lng": 34.7573 },
+      "currentRoad": 35,
+      "roadType": "urban_junction",
+      "direction": "east",
+      "physicalConnections": [35, 40],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 7,
+      "servedDestinations": ["אשדוד", "אשקלון", "קריית גת", "דרום"],
+      "roadToDestinations": {
+        "35": ["קריית גת", "חברון", "דרום"],
+        "40": ["באר שבע", "אשדוד", "תל אביב"]
+      }
+    },
+    {
+      "id": "mhlf_aluf_sade_north",
+      "name": "מחלף אלוף שדה (לצפון כביש 4)",
+      "stopId": 36114,
+      "coordinates": { "lat": 32.0621, "lng": 34.8291 },
+      "currentRoad": 4,
+      "roadType": "interchange",
+      "direction": "north",
+      "physicalConnections": [4, 471],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 24,
+      "servedDestinations": ["תל אביב", "נתניה", "חיפה", "מרכז", "צפון"],
+      "roadToDestinations": {
+        "4":   ["נתניה", "חיפה", "עכו", "צפון"],
+        "471": ["תל אביב", "מרכז"]
+      }
+    },
+    {
+      "id": "mhlf_morasha_east",
+      "name": "מחלף מורשה (למזרח כביש 5)",
+      "stopId": 21104,
+      "coordinates": { "lat": 32.1311, "lng": 34.8512 },
+      "currentRoad": 5,
+      "roadType": "interchange",
+      "direction": "east",
+      "physicalConnections": [5, 4],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 16,
+      "servedDestinations": ["ראש העין", "רעננה", "כפר סבא", "מרכז"],
+      "roadToDestinations": {
+        "5": ["ראש העין", "אריאל", "מזרח"],
+        "4": ["רעננה", "כפר סבא", "נתניה", "צפון"]
+      }
+    },
+    {
+      "id": "chomet_raanana_center",
+      "name": "צומת רעננה מרכז (לצפון כביש 4)",
+      "stopId": 21255,
+      "coordinates": { "lat": 32.1852, "lng": 34.8814 },
+      "currentRoad": 4,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [4, 541],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 31,
+      "servedDestinations": ["רעננה", "כפר סבא", "נתניה", "חיפה", "צפון"],
+      "roadToDestinations": {
+        "4":   ["נתניה", "חיפה", "צפון"],
+        "541": ["רעננה", "כפר סבא", "מרכז"]
+      }
+    },
+    {
+      "id": "mhlf_netanya_north",
+      "name": "מחלף נתניה (לצפון כביש 2)",
+      "stopId": 46123,
+      "coordinates": { "lat": 32.3289, "lng": 34.8692 },
+      "currentRoad": 2,
+      "roadType": "interchange",
+      "direction": "north",
+      "physicalConnections": [2, 57],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 14,
+      "servedDestinations": ["נתניה", "חיפה", "עכו", "נהריה", "צפון"],
+      "roadToDestinations": {
+        "2":  ["חיפה", "עכו", "נהריה", "צפון"],
+        "57": ["נתניה", "עמק חפר"]
+      }
+    },
+    {
+      "id": "chomet_amichai_megiddo",
+      "name": "צומת מגידו (לצפון/מזרח)",
+      "stopId": 51224,
+      "coordinates": { "lat": 32.5768, "lng": 35.1812 },
+      "currentRoad": 65,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [65, 66],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 8,
+      "servedDestinations": ["עפולה", "נצרת", "חיפה", "גליל", "צפון"],
+      "roadToDestinations": {
+        "65": ["עפולה", "נצרת", "צפון"],
+        "66": ["חיפה", "מגידו", "מרכז"]
+      }
+    },
+    {
+      "id": "chomet_tselmon_kadarim",
+      "name": "מחלף קדרית/צלמון (לצפון כביש 65)",
+      "stopId": 54119,
+      "coordinates": { "lat": 32.8891, "lng": 35.4384 },
+      "currentRoad": 65,
+      "roadType": "interchange",
+      "direction": "north",
+      "physicalConnections": [65, 85],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 5,
+      "servedDestinations": ["טבריה", "צפת", "קצרין", "גליל"],
+      "roadToDestinations": {
+        "65": ["קצרין", "גולן", "צפון"],
+        "85": ["צפת", "עכו", "נהריה"]
+      }
+    },
+    {
+      "id": "chomet_tsabari_tsfath",
+      "name": "צומת ביריה (כניסה לצפת)",
+      "stopId": 56002,
+      "coordinates": { "lat": 32.9774, "lng": 35.5034 },
+      "currentRoad": 89,
+      "roadType": "urban_junction",
+      "direction": "north",
+      "physicalConnections": [89, 8900],
+      "safetyRating": "safe",
+      "transitType": "local",
+      "activeBusLinesCount": 6,
+      "servedDestinations": ["צפת", "קרית שמונה", "גליל עליון"],
+      "roadToDestinations": {
+        "89":   ["עכו", "נהריה", "מערב גליל"],
+        "8900": ["צפת", "קרית שמונה"]
+      }
+    },
+    {
+      "id": "chomet_tsafit_arava",
+      "name": "צומת הערבה (מפגש כביש 90/25)",
+      "stopId": 16102,
+      "coordinates": { "lat": 30.9912, "lng": 35.3721 },
+      "currentRoad": 90,
+      "roadType": "urban_junction",
+      "direction": "south",
+      "physicalConnections": [90, 25],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 4,
+      "servedDestinations": ["אילת", "ערד", "דימונה", "נגב", "דרום"],
+      "roadToDestinations": {
+        "90": ["אילת", "דרום"],
+        "25": ["ערד", "דימונה", "באר שבע"]
+      }
+    },
+    {
+      "id": "chomet_eilat_yotvata",
+      "name": "צומת יטבתה (כביש 90 לדרום)",
+      "stopId": 19124,
+      "coordinates": { "lat": 29.8924, "lng": 35.0601 },
+      "currentRoad": 90,
+      "roadType": "service_road",
+      "direction": "south",
+      "physicalConnections": [90],
+      "safetyRating": "safe",
+      "transitType": "intercity",
+      "activeBusLinesCount": 5,
+      "servedDestinations": ["אילת", "דרום", "נגב"],
+      "roadToDestinations": {
+        "90": ["אילת", "דרום"]
+      }
+    }
+  ]
+}
