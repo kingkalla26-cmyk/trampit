@@ -393,7 +393,8 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
         signal: AbortSignal.timeout(8000) }
     );
     const data = await response.json();
-    const raw = data.address?.city || data.address?.town || data.address?.village || data.address?.suburb || null;
+    const a = data.address || {};
+    const raw = a.city || a.town || a.city_district || a.village || a.quarter || a.neighbourhood || a.suburb || null;
     if (!raw) return res.json({ city: null });
 
     // מחפש התאמה ברשימת הערים הממשלתית

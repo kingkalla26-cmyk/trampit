@@ -59,14 +59,37 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
     if (!navigator.geolocation) return;
     setLocLoading(true);
     setOpen(false);
-    navigator.geolocation.getCurrentPosition(async pos => {
+
+    let watchId = null;
+    let best = null;
+    const done = async (pos) => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = -1;
       const city = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
       if (city) {
         const match = cities.find(c => c.includes(city) || city.includes(c)) || city;
         onChange(match);
       }
       setLocLoading(false);
-    }, () => setLocLoading(false), { timeout: 8000, enableHighAccuracy: true });
+    };
+
+    // Wait up to 10s for a fix ≤100m; use best available on timeout
+    const timer = setTimeout(() => {
+      if (watchId !== null && watchId !== -1) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = -1;
+        if (best) done(best); else setLocLoading(false);
+      }
+    }, 10000);
+
+    watchId = navigator.geolocation.watchPosition(
+      pos => {
+        best = pos;
+        if (pos.coords.accuracy <= 100) { clearTimeout(timer); done(pos); }
+      },
+      () => { clearTimeout(timer); setLocLoading(false); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    );
   }
 
   const showDropdown = open && (filtered.length > 0 || (showLocationBtn && value.length === 0));
