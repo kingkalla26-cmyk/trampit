@@ -3,7 +3,8 @@ const express = require('express');
 const helmet  = require('helmet');
 const path    = require('path');
 const fs      = require('fs');
-const trampitDb              = require('./data/trampitPointsDb.v2.json');
+const TRAMPIT_DB_PATH = path.join(__dirname, 'data', 'trampitPointsDb.v2.json');
+function loadTrampitDb() { return JSON.parse(fs.readFileSync(TRAMPIT_DB_PATH, 'utf8')); }
 const { evaluateRouteDecision } = require('./data/evaluateRouteDecision');
 const app     = express();
 
@@ -426,7 +427,7 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
 
 // ─── /api/points — נקודות טרמפ מאומתות מה-DB ────────────────────────────────
 app.get('/api/points', requireAuth, (req, res) => {
-  const points = trampitDb.points
+  const points = loadTrampitDb().points
     .filter(p => p.safetyRating !== 'dangerous')
     .map(p => ({
       id:          p.id,
@@ -460,7 +461,7 @@ app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({
   const dest     = String(destination).trim().slice(0, 60);
   const nextRoad = Number(driverNextRoad) || 0;
 
-  const relevant = trampitDb.points
+  const relevant = loadTrampitDb().points
     .filter(p => p.safetyRating !== 'dangerous')
     .filter(p => Array.isArray(p.servedDestinations) &&
       p.servedDestinations.some(d => dest.includes(d) || d.includes(dest)))
