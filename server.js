@@ -388,12 +388,13 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
 
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=he`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0', 'Accept-Language': 'he' },
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1&accept-language=he`,
+      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com', 'Accept-Language': 'he' },
         signal: AbortSignal.timeout(8000) }
     );
     const data = await response.json();
     const a = data.address || {};
+    console.log('[geocode] raw address fields:', JSON.stringify(a));
 
     // שם העיר/יישוב
     const cityRaw = a.city || a.town || a.city_district || a.village || a.quarter || a.neighbourhood || a.suburb || null;

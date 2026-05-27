@@ -65,27 +65,31 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
     const done = async (pos) => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       watchId = -1;
+      console.log('[GPS] using fix acc=', Math.round(pos.coords.accuracy), 'm', pos.coords.latitude, pos.coords.longitude);
       const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      console.log('[GPS] address result=', address);
       if (address) onChange(address);
       setLocLoading(false);
     };
 
-    // Wait up to 15s for a fix ≤30m; use best available on timeout
+    // Wait up to 20s for a fix ≤20m; use best available on timeout
     const timer = setTimeout(() => {
       if (watchId !== null && watchId !== -1) {
         navigator.geolocation.clearWatch(watchId);
         watchId = -1;
+        console.log('[GPS] timeout — best acc=', best ? Math.round(best.coords.accuracy) : 'none');
         if (best) done(best); else setLocLoading(false);
       }
-    }, 15000);
+    }, 20000);
 
     watchId = navigator.geolocation.watchPosition(
       pos => {
+        console.log('[GPS] fix acc=', Math.round(pos.coords.accuracy), 'm');
         best = pos;
-        if (pos.coords.accuracy <= 30) { clearTimeout(timer); done(pos); }
+        if (pos.coords.accuracy <= 20) { clearTimeout(timer); done(pos); }
       },
-      () => { clearTimeout(timer); setLocLoading(false); },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+      (err) => { console.log('[GPS] error', err.code, err.message); clearTimeout(timer); setLocLoading(false); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
   }
 
