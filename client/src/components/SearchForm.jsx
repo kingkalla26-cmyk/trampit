@@ -66,6 +66,7 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
               onChange={v => setForm(f => ({ ...f, origin: v }))}
               placeholder="למשל: באר שבע"
               cities={cities}
+              showLocationBtn={true}
             />
           </div>
           <div style={s.inputGroup}>
