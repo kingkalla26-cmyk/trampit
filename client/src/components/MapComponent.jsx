@@ -58,6 +58,18 @@ export default function MapComponent({ spots = [], points = [] }) {
   const [flyTrigger, setFlyTrigger] = useState(0);
 
   useEffect(() => {
+    const prevent = e => e.preventDefault();
+    document.addEventListener('gesturestart',  prevent, { passive: false });
+    document.addEventListener('gesturechange', prevent, { passive: false });
+    document.addEventListener('gestureend',    prevent, { passive: false });
+    return () => {
+      document.removeEventListener('gesturestart',  prevent);
+      document.removeEventListener('gesturechange', prevent);
+      document.removeEventListener('gestureend',    prevent);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!navigator.geolocation) { setLoading(false); return; }
     const watchId = navigator.geolocation.watchPosition(
       pos => {
