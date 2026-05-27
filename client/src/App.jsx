@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ISRAEL_CITIES } from './data/israelCities.js';
 import SearchPage       from './pages/SearchPage.jsx';
 import MapPage          from './pages/MapPage.jsx';
 import RidePage         from './pages/RidePage.jsx';
@@ -18,8 +19,8 @@ export default function App() {
         setAuthed(true);
         return r.json();
       })
-      .then(d => Array.isArray(d) && setCities(d))
-      .catch(() => setAuthed(false));
+      .then(d => setCities(Array.isArray(d) && d.length > 0 ? d : ISRAEL_CITIES))
+      .catch(() => { setAuthed(false); setCities(ISRAEL_CITIES); });
   }, []);
 
   if (authed === null) return null; // טוען

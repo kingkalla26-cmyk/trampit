@@ -22,7 +22,10 @@ export default function SearchPage({ cities = [] }) {
 
   async function handleAnalyze() {
     if (!form.origin || !form.destination) { showToast('⚠️ נא למלא נקודת מוצא ויעד'); return; }
-    if (!form.carDest)                     { showToast('⚠️ נא לציין לאן נוסע הרכב');  return; }
+    if (!form.carDest && !form.wazeLink && !form.uploadedImage) {
+      showToast('⚠️ הזן יעד רכב, קישור Waze, או צילום מסך');
+      return;
+    }
     await analyze(form);
   }
 

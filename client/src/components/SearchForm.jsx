@@ -81,17 +81,19 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
         </div>
       </div>
 
-      {/* STEP 2 */}
+      {/* STEP 2 — מסלול הרכב (אחת מ-3 אפשרויות) */}
       <div style={s.card}>
         <div style={s.cardHeader}>
           <div style={s.stepNum}>2</div>
           <div>
-            <div style={s.cardTitle}>הטרמפ שלך</div>
-            <div style={s.cardSub}>לאן נוסע הרכב שבו אתה נוסע?</div>
+            <div style={s.cardTitle}>מסלול הרכב</div>
+            <div style={s.cardSub}>בחר אחת מהאפשרויות — לאן נוסע הרכב?</div>
           </div>
         </div>
-        <div style={s.inputGroup}>
-          <label style={s.label}>🚗 יעד הרכב (לא שלך)</label>
+
+        {/* אפשרות א׳ — הקלד יעד */}
+        <div style={s.optionBlock}>
+          <div style={s.optionLabel}>🚗 אפשרות א׳ — הקלד יעד הרכב</div>
           <AutocompleteInput
             value={form.carDest}
             onChange={v => setForm(f => ({ ...f, carDest: v }))}
@@ -99,35 +101,12 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
             cities={cities}
           />
         </div>
-        <div style={s.inputGroup}>
-          <label style={s.label}>⏰ שעת נסיעה משוערת</label>
-          <select
-            className="ti"
-            style={s.input}
-            value={form.travelTime}
-            onChange={e => setForm(f => ({ ...f, travelTime: e.target.value }))}
-          >
-            <option value="now">עכשיו</option>
-            <option value="morning">בוקר (07:00–10:00)</option>
-            <option value="noon">צהריים (12:00–14:00)</option>
-            <option value="afternoon">אחה"צ (15:00–18:00)</option>
-            <option value="evening">ערב (18:00–21:00)</option>
-          </select>
-        </div>
-      </div>
 
-      {/* STEP 3 */}
-      <div style={s.card}>
-        <div style={s.cardHeader}>
-          <div style={s.stepNum}>3</div>
-          <div>
-            <div style={s.cardTitle}>מסלול הנסיעה</div>
-            <div style={s.cardSub}>שתף מסלול מ-Waze לקבל המלצות מדויקות יותר</div>
-          </div>
-        </div>
+        <div style={s.orDivider}>או</div>
 
-        <div style={s.wazeBox}>
-          <div style={s.wazeLabel}>🔗 הדבק קישור שיתוף מסלול</div>
+        {/* אפשרות ב׳ — קישור Waze */}
+        <div style={s.optionBlock}>
+          <div style={s.optionLabel}>🔗 אפשרות ב׳ — קישור שיתוף מסלול</div>
           <div style={s.wazeRow}>
             <input
               className="ti"
@@ -143,29 +122,57 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
               <button style={s.clearBtn} onClick={() => setForm(f => ({ ...f, wazeLink: null, wazeLinkInput: '', wazeLinkStatus: '' }))}>✕</button>
             )}
           </div>
-          {form.wazeLinkStatus === 'ok' && <div style={{ ...s.linkStatus, color: '#059669' }}>✓ קישור ניווט זוהה</div>}
+          {form.wazeLinkStatus === 'ok'      && <div style={{ ...s.linkStatus, color: '#059669' }}>✓ קישור ניווט זוהה</div>}
           {form.wazeLinkStatus === 'warning' && <div style={{ ...s.linkStatus, color: '#d97706' }}>⚠ קישור זוהה — AI ינסה לפרש</div>}
-          {form.wazeLinkStatus === 'error' && <div style={{ ...s.linkStatus, color: '#dc2626' }}>✕ לא נראה כקישור תקין</div>}
+          {form.wazeLinkStatus === 'error'   && <div style={{ ...s.linkStatus, color: '#dc2626' }}>✕ לא נראה כקישור תקין</div>}
         </div>
 
         <div style={s.orDivider}>או</div>
 
-        <div
-          style={s.uploadZone}
-          onClick={() => fileInputRef.current.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
-        >
-          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-            onChange={e => handleFile(e.target.files[0])} />
-          <div style={{ fontSize: 28 }}>📸</div>
-          <div style={s.uploadTitle}>העלה צילום מסך של Waze</div>
-          <div style={s.uploadSub}>גרור או לחץ לבחירת קובץ · PNG, JPG</div>
+        {/* אפשרות ג׳ — צילום מסך */}
+        <div style={s.optionBlock}>
+          <div style={s.optionLabel}>📸 אפשרות ג׳ — צילום מסך של המסלול</div>
+          <div
+            style={s.uploadZone}
+            onClick={() => fileInputRef.current.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
+          >
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={e => handleFile(e.target.files[0])} />
+            {form.imagePreview ? (
+              <img src={form.imagePreview} alt="preview" style={s.preview} />
+            ) : (
+              <>
+                <div style={{ fontSize: 28 }}>📸</div>
+                <div style={s.uploadTitle}>גרור או לחץ לבחירת קובץ</div>
+                <div style={s.uploadSub}>PNG, JPG · צילום מסך של Waze</div>
+              </>
+            )}
+          </div>
+          {form.imagePreview && (
+            <button style={s.clearBtn} onClick={() => setForm(f => ({ ...f, uploadedImage: null, imagePreview: null }))}>
+              ✕ הסר תמונה
+            </button>
+          )}
         </div>
 
-        {form.imagePreview && (
-          <img src={form.imagePreview} alt="preview" style={s.preview} />
-        )}
+        {/* שעת נסיעה */}
+        <div style={{ ...s.inputGroup, marginTop: 16 }}>
+          <label style={s.label}>⏰ שעת נסיעה משוערת</label>
+          <select
+            className="ti"
+            style={s.input}
+            value={form.travelTime}
+            onChange={e => setForm(f => ({ ...f, travelTime: e.target.value }))}
+          >
+            <option value="now">עכשיו</option>
+            <option value="morning">בוקר (07:00–10:00)</option>
+            <option value="noon">צהריים (12:00–14:00)</option>
+            <option value="afternoon">אחה"צ (15:00–18:00)</option>
+            <option value="evening">ערב (18:00–21:00)</option>
+          </select>
+        </div>
       </div>
 
       {/* PROMO BANNER */}
@@ -206,6 +213,8 @@ const s = {
   label:      { fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.5px' },
   input:      { background: '#f1f5f9', border: '1.5px solid transparent', borderRadius: 12, padding: '12px 14px', color: '#1f2937', fontSize: 15, fontFamily: 'Heebo, sans-serif', direction: 'rtl', outline: 'none', width: '100%' },
   promoBanner:{ background: '#feefc3', border: '1px solid #fcd34d', borderRadius: 12, padding: '12px 16px', color: '#b45309', fontSize: 14, fontWeight: 600, textAlign: 'center' },
+  optionBlock:{ marginBottom: 4 },
+  optionLabel:{ fontSize: 13, fontWeight: 600, color: '#4b5563', marginBottom: 8 },
   wazeBox:    { marginBottom: 12 },
   wazeLabel:  { fontSize: 13, color: '#4b5563', marginBottom: 8 },
   wazeRow:    { display: 'flex', gap: 8, alignItems: 'center' },
