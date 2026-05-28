@@ -7,10 +7,13 @@ import RidePage         from './pages/RidePage.jsx';
 import JunctionCardDemo from './pages/JunctionCardDemo.jsx';
 import ErrorBoundary    from './components/ErrorBoundary.jsx';
 import LoginScreen      from './components/LoginScreen.jsx';
+import SplashScreen     from './components/SplashScreen.jsx';
 
 export default function App() {
-  const [cities,    setCities]    = useState([]);
-  const [authed,    setAuthed]    = useState(null); // null = טוען, true/false = ידוע
+  const [cities,       setCities]       = useState([]);
+  const [authed,       setAuthed]       = useState(null);
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashFading,  setSplashFading]  = useState(false);
 
   useEffect(() => {
     fetch('/api/cities', { credentials: 'include' })
@@ -23,19 +26,32 @@ export default function App() {
       .catch(() => { setAuthed(false); setCities(ISRAEL_CITIES); });
   }, []);
 
-  if (authed === null) return null; // טוען
-
-  if (authed === false) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  // כשהמצב ידוע — מתחיל fade-out, ואחרי 550ms מסיר לגמרי
+  useEffect(() => {
+    if (authed !== null) {
+      setSplashFading(true);
+      const t = setTimeout(() => setSplashVisible(false), 550);
+      return () => clearTimeout(t);
+    }
+  }, [authed]);
 
   return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/"     element={<SearchPage cities={cities} />} />
-        <Route path="/map"  element={<MapPage />} />
-        <Route path="/ride" element={<RidePage />} />
-        <Route path="/demo" element={<JunctionCardDemo />} />
-        <Route path="*"     element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+    <>
+      {splashVisible && <SplashScreen fading={splashFading} />}
+
+      {authed !== null && (
+        authed === false
+          ? <LoginScreen onLogin={() => setAuthed(true)} />
+          : <ErrorBoundary>
+              <Routes>
+                <Route path="/"     element={<SearchPage cities={cities} />} />
+                <Route path="/map"  element={<MapPage />} />
+                <Route path="/ride" element={<RidePage />} />
+                <Route path="/demo" element={<JunctionCardDemo />} />
+                <Route path="*"     element={<Navigate to="/" replace />} />
+              </Routes>
+            </ErrorBoundary>
+      )}
+    </>
   );
 }
