@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet-rotate';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -26,7 +27,6 @@ const userIcon  = circleIcon('#ef4444', 20);
 const spotIcon  = circleIcon('#2563eb', 18);
 const pointIcon = circleIcon('#059669', 16);
 
-// Centers map ONCE when GPS first locks — never interferes with manual panning after that
 function FirstCenter({ gps }) {
   const map = useMap();
   const done = useRef(false);
@@ -39,7 +39,6 @@ function FirstCenter({ gps }) {
   return null;
 }
 
-// Handles "fly to me" button — incrementing trigger fires flyTo
 function FlyToMe({ trigger, gps }) {
   const map  = useMap();
   const prev = useRef(0);
@@ -52,22 +51,23 @@ function FlyToMe({ trigger, gps }) {
   return null;
 }
 
+// כפתור מצפן — מאפס סיבוב לצפון
+function CompassControl({ onBearingChange }) {
+  const map = useMap();
+  useEffect(() => {
+    const update = () => onBearingChange(map.getBearing?.() ?? 0);
+    map.on('rotate', update);
+    return () => map.off('rotate', update);
+  }, [map, onBearingChange]);
+  return null;
+}
+
 export default function MapComponent({ spots = [], points = [] }) {
   const [gps,        setGps]        = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [flyTrigger, setFlyTrigger] = useState(0);
-
-  useEffect(() => {
-    const prevent = e => e.preventDefault();
-    document.addEventListener('gesturestart',  prevent, { passive: false });
-    document.addEventListener('gesturechange', prevent, { passive: false });
-    document.addEventListener('gestureend',    prevent, { passive: false });
-    return () => {
-      document.removeEventListener('gesturestart',  prevent);
-      document.removeEventListener('gesturechange', prevent);
-      document.removeEventListener('gestureend',    prevent);
-    };
-  }, []);
+  const [bearing,    setBearing]    = useState(0);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     if (!navigator.geolocation) { setLoading(false); return; }
@@ -93,6 +93,9 @@ export default function MapComponent({ spots = [], points = [] }) {
         zoom={8}
         style={{ width: '100%', height: '100%' }}
         zoomControl={true}
+        rotate={true}
+        touchRotate={true}
+        ref={mapRef}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -101,8 +104,8 @@ export default function MapComponent({ spots = [], points = [] }) {
 
         <FirstCenter gps={gps} />
         <FlyToMe trigger={flyTrigger} gps={gps} />
+        <CompassControl onBearingChange={setBearing} />
 
-        {/* מיקום המשתמש + עיגול דיוק */}
         {gps && (
           <>
             <Circle
@@ -121,7 +124,6 @@ export default function MapComponent({ spots = [], points = [] }) {
           </>
         )}
 
-        {/* נקודות טרמפ מה-DB */}
         {points.map(pt => (
           <Marker key={pt.id} position={[pt.coordinates.lat, pt.coordinates.lng]} icon={pointIcon}>
             <Popup>
@@ -139,7 +141,6 @@ export default function MapComponent({ spots = [], points = [] }) {
           </Marker>
         ))}
 
-        {/* נקודות קהילתיות */}
         {spots.filter(s => s.coordinates?.lat && s.coordinates?.lng).map(spot => (
           <Marker key={spot.id} position={[spot.coordinates.lat, spot.coordinates.lng]} icon={spotIcon}>
             <Popup>
@@ -153,7 +154,18 @@ export default function MapComponent({ spots = [], points = [] }) {
         ))}
       </MapContainer>
 
-      {/* כפתור "חזור אליי" */}
+      {/* כפתור מצפן — מאפס לצפון כשהמפה מסובבת */}
+      {bearing !== 0 && (
+        <button
+          style={st.compassBtn}
+          onClick={() => mapRef.current?.setBearing(0)}
+          title="אפס לצפון"
+        >
+          <span style={{ display: 'inline-block', transform: `rotate(${-bearing}deg)`, fontSize: 18, lineHeight: 1 }}>🧭</span>
+        </button>
+      )}
+
+      {/* כפתור חזור אליי */}
       {gps && (
         <button style={st.centerBtn} onClick={() => setFlyTrigger(t => t + 1)} title="חזור למיקום שלי">
           🎯
@@ -178,8 +190,16 @@ const st = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: 15, color: '#f0f2f7',
   },
+  compassBtn: {
+    position: 'absolute', top: 44, right: 10, zIndex: 1000,
+    background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
+    borderRadius: 4, width: 34, height: 34,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
+    touchAction: 'manipulation',
+  },
   centerBtn: {
-    position: 'absolute', top: 80, right: 10, zIndex: 1000,
+    position: 'absolute', top: 84, right: 10, zIndex: 1000,
     background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
     borderRadius: 4, width: 34, height: 34,
     display: 'flex', alignItems: 'center', justifyContent: 'center',

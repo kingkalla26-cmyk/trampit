@@ -344,7 +344,7 @@ app.get('/api/spots', (req, res) => {
 });
 
 app.post('/api/spots', makeRateLimit('spots'), express.json({ limit: '2kb' }), (req, res) => {
-  const { name, city, direction, bestHours, rating } = req.body || {};
+  const { name, city, direction, bestHours, rating, coordinates } = req.body || {};
 
   if (!name || !VALID_SPOT_TEXT.test(String(name)))          return res.status(400).json({ error: 'שם מיקום לא תקין' });
   if (!city || !VALID_SPOT_TEXT.test(String(city)))          return res.status(400).json({ error: 'שם עיר לא תקין' });
@@ -366,15 +366,21 @@ app.post('/api/spots', makeRateLimit('spots'), express.json({ limit: '2kb' }), (
     return res.json({ ok: true, updated: true });
   }
 
+  const coordsValid = coordinates &&
+    typeof coordinates.lat === 'number' && typeof coordinates.lng === 'number' &&
+    coordinates.lat >= 29 && coordinates.lat <= 34 &&
+    coordinates.lng >= 34 && coordinates.lng <= 36;
+
   const spot = {
-    id:        crypto.randomBytes(8).toString('hex'),
-    name:      nameTr,
-    city:      cityTr,
-    direction: String(direction),
-    bestHours: bestHours ? String(bestHours).trim() : '',
-    rating:    ratingNum,
-    reports:   1,
-    createdAt: new Date().toISOString(),
+    id:          crypto.randomBytes(8).toString('hex'),
+    name:        nameTr,
+    city:        cityTr,
+    direction:   String(direction),
+    bestHours:   bestHours ? String(bestHours).trim() : '',
+    rating:      ratingNum,
+    reports:     1,
+    createdAt:   new Date().toISOString(),
+    ...(coordsValid && { coordinates: { lat: coordinates.lat, lng: coordinates.lng } }),
   };
   spots.push(spot);
   saveSpots(spots);
