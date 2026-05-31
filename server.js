@@ -3,7 +3,7 @@ const express = require('express');
 const helmet  = require('helmet');
 const path    = require('path');
 const fs      = require('fs');
-const TRAMPIT_DB_PATH = path.join(__dirname, 'data', 'trampitPointsDb.v2.json');
+const TRAMPIT_DB_PATH = path.join(__dirname, 'data', 'trampitPointsDb.v3.json');
 function loadTrampitDb() { return JSON.parse(fs.readFileSync(TRAMPIT_DB_PATH, 'utf8')); }
 const { evaluateRouteDecision } = require('./data/evaluateRouteDecision');
 const app     = express();

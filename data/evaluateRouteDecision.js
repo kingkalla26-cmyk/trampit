@@ -7,7 +7,7 @@ const fs   = require('fs');
 const path = require('path');
 
 function loadDb() {
-  return JSON.parse(fs.readFileSync(path.join(__dirname, 'trampitPointsDb.v2.json'), 'utf8'));
+  return JSON.parse(fs.readFileSync(path.join(__dirname, 'trampitPointsDb.v3.json'), 'utf8'));
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
