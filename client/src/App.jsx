@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ISRAEL_CITIES } from './data/israelCities.js';
-import SearchPage       from './pages/SearchPage.jsx';
-import MapPage          from './pages/MapPage.jsx';
-import RidePage         from './pages/RidePage.jsx';
-import JunctionCardDemo from './pages/JunctionCardDemo.jsx';
-import ErrorBoundary    from './components/ErrorBoundary.jsx';
-import LoginScreen      from './components/LoginScreen.jsx';
-import SplashScreen     from './components/SplashScreen.jsx';
+import SearchPage            from './pages/SearchPage.jsx';
+import MapPage               from './pages/MapPage.jsx';
+import RidePage              from './pages/RidePage.jsx';
+import JunctionCardDemo      from './pages/JunctionCardDemo.jsx';
+import ErrorBoundary         from './components/ErrorBoundary.jsx';
+import LoginScreen           from './components/LoginScreen.jsx';
+import SplashScreen          from './components/SplashScreen.jsx';
+import { JunctionProvider }  from './components/JunctionProvider.jsx';
 
 export default function App() {
   const [cities,       setCities]       = useState([]);
@@ -47,7 +48,7 @@ export default function App() {
                 <Route path="/"     element={<SearchPage cities={cities} />} />
                 <Route path="/map"  element={<MapPage />} />
                 <Route path="/ride" element={<RidePage />} />
-                <Route path="/demo" element={<JunctionCardDemo />} />
+                <Route path="/demo" element={<JunctionProvider><JunctionCardDemo /></JunctionProvider>} />
                 <Route path="*"     element={<Navigate to="/" replace />} />
               </Routes>
             </ErrorBoundary>

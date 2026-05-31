@@ -1,48 +1,76 @@
-import JunctionCard from '../components/JunctionCard.jsx';
-import Layout from '../components/Layout.jsx';
-
-const SAMPLES = [
-  {
-    name: 'צומת שמשון',
-    road: 44,
-    connectedRoads: [44, 38],
-    direction: 'south',
-    destination: ['בית שמש', 'ירושלים', 'רמלה'],
-    isSafe: true,
-    busLines: 10,
-  },
-  {
-    name: 'צומת קסטינה (מלאכי)',
-    road: 3,
-    connectedRoads: [3, 40],
-    direction: 'south',
-    destination: ['קריית מלאכי', 'אשקלון', 'באר שבע', 'רחובות'],
-    isSafe: true,
-    busLines: 18,
-  },
-  {
-    name: 'מחלף חולון',
-    road: 20,
-    connectedRoads: [20, 44],
-    direction: 'north',
-    destination: ['תל אביב', 'חולון', 'בת ים'],
-    isSafe: true,
-    busLines: 25,
-  },
-];
+import { useState } from 'react';
+import JunctionCard      from '../components/JunctionCard.jsx';
+import Layout            from '../components/Layout.jsx';
+import { useJunctions }  from '../components/JunctionProvider.jsx';
 
 export default function JunctionCardDemo() {
+  const { junctions, isLoading, error } = useJunctions();
+  const [search, setSearch] = useState('');
+
+  const visible = junctions.filter(j =>
+    j.name.includes(search) ||
+    j.connectedRoads.some(r => String(r).includes(search)) ||
+    j.destination.some(d => d.includes(search)),
+  );
+
+  if (isLoading) return null; // SplashScreen handled by JunctionProvider
+
   return (
     <Layout>
       <div style={{ padding: '24px 16px', direction: 'rtl' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: '#1f2937' }}>
-          תצוגה מקדימה — JunctionCard
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
-          {SAMPLES.map((s, i) => (
-            <JunctionCard key={i} {...s} />
-          ))}
+
+        {/* Header */}
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>
+            צמתים — נתוני OpenStreetMap
+          </h2>
+          <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+            {error
+              ? `⚠️ ${error}`
+              : `${junctions.length} צמתים נטענו מה-OSM`}
+          </p>
         </div>
+
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="חפש לפי שם, כביש או יעד..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 14px',
+            borderRadius: 12,
+            border: '1px solid #e2e8f0',
+            fontSize: 14,
+            marginBottom: 20,
+            boxSizing: 'border-box',
+            direction: 'rtl',
+          }}
+        />
+
+        {/* Cards */}
+        {error && junctions.length === 0 ? (
+          <p style={{ color: '#ef4444', textAlign: 'center', marginTop: 40 }}>
+            לא ניתן לטעון נתונים. בדוק חיבור לאינטרנט.
+          </p>
+        ) : visible.length === 0 ? (
+          <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: 40 }}>
+            לא נמצאו צמתים התואמים את החיפוש.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+            {visible.slice(0, 50).map(j => (
+              <JunctionCard key={j.id} {...j} />
+            ))}
+            {visible.length > 50 && (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+                מוצגים 50 מתוך {visible.length} תוצאות. צמצם את החיפוש.
+              </p>
+            )}
+          </div>
+        )}
+
       </div>
     </Layout>
   );
