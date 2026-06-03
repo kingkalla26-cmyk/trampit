@@ -1,6 +1,6 @@
 import { Navigation } from 'lucide-react';
 
-export default function SplashScreen({ fading = false }) {
+export default function SplashScreen({ fading = false, message = 'טוען נתונים...' }) {
   return (
     <div
       style={{ transition: 'opacity 0.55s ease' }}
@@ -25,7 +25,7 @@ export default function SplashScreen({ fading = false }) {
       <div className="flex flex-col items-center gap-3">
         <div className="w-7 h-7 rounded-full border-2 border-slate-200 border-t-blue-500 animate-spin" />
         <p className="text-sm text-slate-400 font-medium" style={{ fontFamily: 'Heebo, sans-serif' }}>
-          טוען נתונים...
+          {message}
         </p>
       </div>
     </div>

@@ -1,7 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
+import MarkerClusterGroup from '@changey/react-leaflet-markercluster';
 import L from 'leaflet';
 import 'leaflet-rotate';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -23,9 +26,35 @@ function circleIcon(color, size = 20) {
   });
 }
 
-const userIcon  = circleIcon('#ef4444', 20);
-const spotIcon  = circleIcon('#2563eb', 18);
-const pointIcon = circleIcon('#059669', 16);
+// אייקון עם קונוס כיוון — SVG מסובב לפי heading המצפן
+function makeUserIcon(heading) {
+  const hasCone = heading !== null;
+  const rot     = hasCone ? heading : 0;
+  // קונוס: מרכז (30,30), רדיוס 24px, שדה ראייה 60°
+  // קצה שמאלי (−30° מצפון): x=30+24·sin(−30°)=18, y=30−24·cos(30°)=9.2
+  // קצה ימני (+30°): x=42, y=9.2
+  const cone = hasCone
+    ? `<path d="M30,30 L18,9 A24,24,0,0,1,42,9 Z"
+         fill="rgba(59,130,246,0.30)" stroke="rgba(59,130,246,0.75)"
+         stroke-width="1.5" stroke-linejoin="round"/>`
+    : '';
+  return L.divIcon({
+    html: `<div style="width:60px;height:60px;transform:rotate(${rot}deg);transform-origin:30px 30px">
+      <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+        ${cone}
+        <circle cx="30" cy="30" r="10" fill="#ef4444" stroke="white" stroke-width="3"/>
+      </svg>
+    </div>`,
+    className: '',
+    iconSize:   [60, 60],
+    iconAnchor: [30, 30],
+    popupAnchor:[0, -12],
+  });
+}
+
+const spotIcon     = circleIcon('#2563eb', 18);
+const verifiedIcon = circleIcon('#059669', 16);
+const autoIcon     = circleIcon('#6b7280', 12);
 
 function FirstCenter({ gps }) {
   const map = useMap();
@@ -51,7 +80,15 @@ function FlyToMe({ trigger, gps }) {
   return null;
 }
 
-// כפתור מצפן — מאפס סיבוב לצפון
+function BoundsWatcher({ onBoundsChange }) {
+  const map = useMapEvents({
+    moveend: (e) => onBoundsChange(e.target.getBounds()),
+    zoomend: (e) => onBoundsChange(e.target.getBounds()),
+  });
+  useEffect(() => { onBoundsChange(map.getBounds()); }, [map, onBoundsChange]);
+  return null;
+}
+
 function CompassControl({ onBearingChange }) {
   const map = useMap();
   useEffect(() => {
@@ -62,13 +99,19 @@ function CompassControl({ onBearingChange }) {
   return null;
 }
 
-export default function MapComponent({ spots = [], points = [] }) {
-  const [gps,        setGps]        = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [flyTrigger, setFlyTrigger] = useState(0);
-  const [bearing,    setBearing]    = useState(0);
-  const mapRef = useRef(null);
+export default function MapComponent({ spots = [], points = [], onBoundsChange }) {
+  const [gps,              setGps]              = useState(null);
+  const [loading,          setLoading]          = useState(true);
+  const [flyTrigger,       setFlyTrigger]       = useState(0);
+  const [bearing,          setBearing]          = useState(0);
+  const [heading,          setHeading]          = useState(null);
+  const [iosNeedsPerm,     setIosNeedsPerm]     = useState(false);
 
+  const mapRef        = useRef(null);
+  const lastHUpdate   = useRef(0);
+  const orientHandler = useRef(null);
+
+  // GPS
   useEffect(() => {
     if (!navigator.geolocation) { setLoading(false); return; }
     const watchId = navigator.geolocation.watchPosition(
@@ -82,7 +125,55 @@ export default function MapComponent({ spots = [], points = [] }) {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  const gpsPos = gps ? [gps.lat, gps.lng] : null;
+  // מצפן — Device Orientation
+  useEffect(() => {
+    orientHandler.current = (e) => {
+      let h = null;
+      if (typeof e.webkitCompassHeading === 'number') {
+        // iOS — ישירות בדרגות מצפון
+        h = e.webkitCompassHeading;
+      } else if (typeof e.alpha === 'number') {
+        // Android — alpha הוא סיבוב ממזרח, הופכים לצפון
+        h = (360 - e.alpha + 360) % 360;
+      }
+      if (h === null) return;
+      const now = Date.now();
+      if (now - lastHUpdate.current < 150) return; // throttle 150ms
+      lastHUpdate.current = now;
+      setHeading(Math.round(h));
+    };
+
+    if (typeof DeviceOrientationEvent === 'undefined') return;
+
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+ — צריך הרשאה מפורשת
+      setIosNeedsPerm(true);
+    } else {
+      window.addEventListener('deviceorientation', orientHandler.current, true);
+    }
+
+    return () => {
+      if (orientHandler.current)
+        window.removeEventListener('deviceorientation', orientHandler.current, true);
+    };
+  }, []);
+
+  const requestHeadingPerm = useCallback(async () => {
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if (perm === 'granted') {
+        setIosNeedsPerm(false);
+        window.addEventListener('deviceorientation', orientHandler.current, true);
+      } else {
+        setIosNeedsPerm(false);
+      }
+    } catch {
+      setIosNeedsPerm(false);
+    }
+  }, []);
+
+  const gpsPos   = gps ? [gps.lat, gps.lng] : null;
+  const userIcon = makeUserIcon(heading);
 
   return (
     <div style={st.wrap}>
@@ -105,6 +196,7 @@ export default function MapComponent({ spots = [], points = [] }) {
         <FirstCenter gps={gps} />
         <FlyToMe trigger={flyTrigger} gps={gps} />
         <CompassControl onBearingChange={setBearing} />
+        {onBoundsChange && <BoundsWatcher onBoundsChange={onBoundsChange} />}
 
         {gps && (
           <>
@@ -118,50 +210,59 @@ export default function MapComponent({ spots = [], points = [] }) {
                 <div style={p.wrap}>
                   <b>📍 המיקום שלך</b>
                   <div style={p.sub}>דיוק: ~{Math.round(gps.accuracy)}מ׳</div>
+                  {heading !== null && <div style={p.sub}>כיוון: {heading}°</div>}
                 </div>
               </Popup>
             </Marker>
           </>
         )}
 
-        {points.map(pt => (
-          <Marker key={pt.id} position={[pt.coordinates.lat, pt.coordinates.lng]} icon={pointIcon}>
-            <Popup>
-              <div style={p.wrap}>
-                <div style={p.title}>{pt.name}</div>
-                <div style={p.row}>כיוון: {pt.direction}</div>
-                {pt.servedDestinations?.length > 0 && (
-                  <div style={{ ...p.row, color: '#2563eb' }}>→ {pt.servedDestinations.slice(0, 3).join(' · ')}</div>
-                )}
-                {pt.activeBusLinesCount > 0 && (
-                  <div style={{ ...p.row, color: '#059669' }}>🚌 {pt.activeBusLinesCount} קווים פעילים</div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <MarkerClusterGroup chunkedLoading disableClusteringAtZoom={15} maxClusterRadius={60}>
+          {points.map(pt => (
+            <Marker key={pt.id} position={[pt.coordinates.lat, pt.coordinates.lng]} icon={pt.isVerified ? verifiedIcon : autoIcon}>
+              <Popup>
+                <div style={p.wrap}>
+                  <div style={p.title}>{pt.name}</div>
+                  {pt.direction
+                    ? <div style={p.row}>כיוון: {pt.direction}</div>
+                    : pt.currentRoad > 0 && <div style={p.row}>כביש: {pt.currentRoad}</div>
+                  }
+                  {pt.servedDestinations?.length > 0 && (
+                    <div style={{ ...p.row, color: '#2563eb' }}>→ {pt.servedDestinations.slice(0, 3).join(' · ')}</div>
+                  )}
+                  {pt.activeBusLinesCount > 0 && (
+                    <div style={{ ...p.row, color: '#059669' }}>🚌 {pt.activeBusLinesCount} קווים פעילים</div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
 
-        {spots.filter(s => s.coordinates?.lat && s.coordinates?.lng).map(spot => (
-          <Marker key={spot.id} position={[spot.coordinates.lat, spot.coordinates.lng]} icon={spotIcon}>
-            <Popup>
-              <div style={p.wrap}>
-                <div style={p.title}>{spot.name}</div>
-                <div style={p.row}>{spot.city} · {spot.direction}</div>
-                {spot.rating > 0 && <div style={p.row}>{STAR_MAP[Math.round(spot.rating)]}</div>}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+          {spots.filter(s => s.coordinates?.lat && s.coordinates?.lng).map(spot => (
+            <Marker key={spot.id} position={[spot.coordinates.lat, spot.coordinates.lng]} icon={spotIcon}>
+              <Popup>
+                <div style={p.wrap}>
+                  <div style={p.title}>{spot.name}</div>
+                  <div style={p.row}>{spot.city} · {spot.direction}</div>
+                  {spot.rating > 0 && <div style={p.row}>{STAR_MAP[Math.round(spot.rating)]}</div>}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
 
       {/* כפתור מצפן — מאפס לצפון כשהמפה מסובבת */}
       {bearing !== 0 && (
-        <button
-          style={st.compassBtn}
-          onClick={() => mapRef.current?.setBearing(0)}
-          title="אפס לצפון"
-        >
+        <button style={st.compassBtn} onClick={() => mapRef.current?.setBearing(0)} title="אפס לצפון">
           <span style={{ display: 'inline-block', transform: `rotate(${-bearing}deg)`, fontSize: 18, lineHeight: 1 }}>🧭</span>
+        </button>
+      )}
+
+      {/* כפתור הרשאת כיוון — iOS בלבד */}
+      {iosNeedsPerm && (
+        <button style={st.headingBtn} onClick={requestHeadingPerm} title="הפעל כיוון מבט">
+          📡
         </button>
       )}
 
@@ -175,7 +276,8 @@ export default function MapComponent({ spots = [], points = [] }) {
       {/* מקרא */}
       <div style={st.legend}>
         <span style={st.legendItem}><span style={{ ...st.dot, background: '#ef4444' }} />אתה</span>
-        <span style={st.legendItem}><span style={{ ...st.dot, background: '#059669' }} />טרמפ</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: '#059669' }} />מאומת</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: '#6b7280' }} />אוטומטי</span>
         <span style={st.legendItem}><span style={{ ...st.dot, background: '#2563eb' }} />קהילה</span>
       </div>
     </div>
@@ -198,8 +300,17 @@ const st = {
     cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
     touchAction: 'manipulation',
   },
-  centerBtn: {
+  headingBtn: {
     position: 'absolute', top: 84, right: 10, zIndex: 1000,
+    background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
+    borderRadius: 4, width: 34, height: 34,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 17, cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
+    touchAction: 'manipulation',
+  },
+  centerBtn: {
+    position: 'absolute', top: 124, right: 10, zIndex: 1000,
     background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
     borderRadius: 4, width: 34, height: 34,
     display: 'flex', alignItems: 'center', justifyContent: 'center',

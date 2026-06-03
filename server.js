@@ -1,14 +1,30 @@
 require('dotenv').config();
+const Sentry  = require('@sentry/node');
 const express = require('express');
 const helmet  = require('helmet');
 const path    = require('path');
 const fs      = require('fs');
-const TRAMPIT_DB_PATH = path.join(__dirname, 'data', 'trampitPointsDb.v3.json');
-function loadTrampitDb() { return JSON.parse(fs.readFileSync(TRAMPIT_DB_PATH, 'utf8')); }
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  enabled: !!process.env.SENTRY_DSN,
+  tracesSampleRate: 0.1,
+  environment: process.env.NODE_ENV || 'production',
+});
+const TRAMPIT_DB_PATH = path.join(__dirname, 'data', 'trampitPointsDb.v4.json');
+let _dbCache = null;
+function loadTrampitDb() {
+  if (!_dbCache) _dbCache = JSON.parse(fs.readFileSync(TRAMPIT_DB_PATH, 'utf8'));
+  return _dbCache;
+}
 const { evaluateRouteDecision } = require('./data/evaluateRouteDecision');
+const { destinationMatchesCity } = require('./data/normalizeCity');
 const app     = express();
 
 app.set('trust proxy', 1);
+
+// ─── Health check — ללא auth, לזיהוי cold start על Render ───────────────────
+app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
 const IS_PROD      = process.env.NODE_ENV === 'production';
 const ALLOWED_HOST = process.env.ALLOWED_HOST || null; // למשל: trampit.app
@@ -128,13 +144,48 @@ const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toStri
 const APP_PASSWORD  = process.env.APP_PASSWORD  || null;
 const COOKIE_NAME   = 'trampit_sid';
 const SESSION_TTL   = 24 * 60 * 60 * 1000;
+const SESSIONS_FILE = path.join(__dirname, 'data', 'sessions.json');
 
 const sessions = new Map();
+
+// טעינת sessions שמורים מקובץ בהפעלה
+(function loadPersistedSessions() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+      const now  = Date.now();
+      let loaded = 0;
+      for (const [token, exp] of Object.entries(data)) {
+        if (exp > now) { sessions.set(token, exp); loaded++; }
+      }
+      if (loaded > 0) console.log(`[sessions] loaded ${loaded} active sessions`);
+    }
+  } catch { /* קובץ פגום — מתחיל מחדש */ }
+})();
+
+// שמירה לקובץ (debounced — 500ms אחרי השינוי האחרון)
+let _saveTimer = null;
+function persistSessions() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try {
+      fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions)), 'utf8');
+    } catch (e) { console.error('[sessions] save error:', e.message); }
+  }, 500);
+}
+
+// שמירה סינכרונית לפני יציאה
+function flushSessionsSync() {
+  try {
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions)), 'utf8');
+  } catch {}
+}
 
 function issueSession(res) {
   const token = crypto.randomBytes(24).toString('hex');
   const sig   = crypto.createHmac('sha256', COOKIE_SECRET).update(token).digest('hex');
   sessions.set(token, Date.now() + SESSION_TTL);
+  persistSessions();
   res.cookie(COOKIE_NAME, `${token}.${sig}`, {
     httpOnly: true,
     sameSite: 'strict',
@@ -164,6 +215,7 @@ setInterval(() => {
   for (const [token, exp] of sessions) {
     if (now > exp) sessions.delete(token);
   }
+  persistSessions();
 }, 60 * 60 * 1000);
 
 function requireAuth(req, res, next) {
@@ -205,15 +257,49 @@ const SYSTEM_PROMPT = `אתה עוזר ניווט לטרמפיסטים בישר�
 כשמשתמש שואל על מסלול — ציין נקודות טרמפ ספציפיות לאורך הדרך, כולל מחלפים וצמתים.
 כשנקודות מאומתות זמינות — תן להן עדיפות בהמלצות שלך.`;
 
+// חילוץ קווי אוטובוס מה-notes: "קו 840→תל אביב | קו 885→אשדוד"
+function extractBusLines(notes) {
+  if (!notes) return [];
+  return [...notes.matchAll(/קו\s+(\d+)→([^|]+)/gu)]
+    .map(m => ({ line: m[1], to: m[2].trim() }))
+    .slice(0, 4);
+}
+
 function buildSpotsContext() {
-  const spots = loadSpots();
-  if (spots.length === 0) return '';
-  const lines = spots.map(s => {
-    const stars = STAR_LABELS[Math.round(s.rating)] || '';
-    const hours = s.bestHours ? ` · שעות: ${s.bestHours}` : '';
-    return `• ${s.name} (${s.city}) · כיוון ${s.direction} · ${stars}${hours}`;
-  });
-  return `\n\nנקודות טרמפ מאומתות מהקהילה:\n${lines.join('\n')}`;
+  const spots  = loadSpots();
+  const db     = loadTrampitDb();
+  const lines  = [];
+
+  // נקודות קהילה (דיווחי משתמשים)
+  if (spots.length > 0) {
+    lines.push('נקודות קהילה:');
+    spots.forEach(s => {
+      const stars = STAR_LABELS[Math.round(s.rating)] || '';
+      const hours = s.bestHours ? ` · ${s.bestHours}` : '';
+      lines.push(`• ${s.name} (${s.city}) · ${s.direction} · ${stars}${hours}`);
+    });
+  }
+
+  // נקודות מסד הנתונים המאומת — מסודרות לפי מספר קווי אוטובוס
+  const dbPoints = db.points
+    .filter(p => p.activeBusLinesCount > 0)
+    .sort((a, b) => b.activeBusLinesCount - a.activeBusLinesCount)
+    .slice(0, 90);
+
+  if (dbPoints.length > 0) {
+    lines.push('\nנקודות טרמפ מאומתות (מסד נתונים):');
+    dbPoints.forEach(p => {
+      const busLines = extractBusLines(p.notes);
+      const busStr   = busLines.length > 0
+        ? busLines.map(b => `${b.line}→${b.to}`).join(' | ')
+        : `${p.activeBusLinesCount} קווים`;
+      const road = p.currentRoad > 0 ? ` · כביש ${p.currentRoad}` : '';
+      lines.push(`• ${p.name}${road} | ${busStr}`);
+    });
+  }
+
+  if (lines.length === 0) return '';
+  return `\n\nנקודות טרמפ:\n${lines.join('\n')}`;
 }
 
 // מביא את כל ה-parts (טקסט + תמונות) מהמסרים בפורמט Gemini
@@ -249,6 +335,25 @@ app.post('/api/analyze', requireAuth, makeRateLimit('analyze'), async (req, res)
   const ALLOWED_ROLES = new Set(['user', 'assistant']);
   const sanitized = messages.filter(msg => typeof msg.role === 'string' && ALLOWED_ROLES.has(msg.role));
   if (sanitized.length === 0) return res.status(400).json({ error: 'בקשה לא תקינה' });
+
+  // ── ולידציה של תמונות: MIME type + magic bytes ──────────────────────────
+  const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const IMAGE_MAGIC = { 'image/jpeg': '/9j/', 'image/png': 'iVBOR', 'image/webp': 'UklGR' };
+  const MAX_B64 = 7 * 1024 * 1024; // ~5MB binary
+  for (const msg of sanitized) {
+    if (!Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (block.type !== 'image') continue;
+      const mime = block.source?.media_type || '';
+      const data = block.source?.data || '';
+      if (!ALLOWED_IMAGE_MIME.has(mime))
+        return res.status(400).json({ error: 'סוג תמונה לא נתמך' });
+      if (data.length > MAX_B64)
+        return res.status(400).json({ error: 'התמונה גדולה מדי' });
+      if (!data.startsWith(IMAGE_MAGIC[mime]))
+        return res.status(400).json({ error: 'קובץ תמונה לא תקין' });
+    }
+  }
 
   try {
     // ── תמונה → Gemini (תומך ב-vision), טקסט בלבד → Groq (מהיר יותר) ──
@@ -433,19 +538,34 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
 
 // ─── /api/points — נקודות טרמפ מאומתות מה-DB ────────────────────────────────
 app.get('/api/points', requireAuth, (req, res) => {
-  const points = loadTrampitDb().points
+  let pts = loadTrampitDb().points
     .filter(p => p.safetyRating !== 'dangerous')
-    .map(p => ({
-      id:          p.id,
-      name:        p.name,
-      coordinates: p.coordinates,
-      roadType:    p.roadType,
-      direction:   p.direction,
-      transitType: p.transitType,
-      activeBusLinesCount: p.activeBusLinesCount,
-      servedDestinations:  p.servedDestinations,
-    }));
-  res.json(points);
+    .filter(p => p.currentRoad > 0 || p.activeBusLinesCount > 0);
+
+  const { bbox } = req.query;
+  if (bbox) {
+    const parts = bbox.split(',').map(Number);
+    if (parts.length === 4 && parts.every(n => isFinite(n))) {
+      const [s, w, n, e] = parts; // south, west, north, east
+      pts = pts.filter(p =>
+        p.coordinates.lat >= s && p.coordinates.lat <= n &&
+        p.coordinates.lng >= w && p.coordinates.lng <= e
+      );
+    }
+  }
+
+  res.json(pts.map(p => ({
+    id:          p.id,
+    name:        p.name,
+    coordinates: p.coordinates,
+    roadType:    p.roadType,
+    direction:   p.direction,
+    transitType: p.transitType,
+    currentRoad: p.currentRoad,
+    activeBusLinesCount: p.activeBusLinesCount,
+    servedDestinations:  p.servedDestinations,
+    isVerified:          p.activeBusLinesCount > 0,
+  })));
 });
 
 // ─── /api/decision — מנוע החלטות נסיעה פעילה ────────────────────────────────
@@ -457,6 +577,132 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// ─── /api/route/match — מציאת צמתי טרמפ לאורך מסלול נסיעה ──────────────────
+app.post('/api/route/match', requireAuth, makeRateLimit('decision'), express.json({ limit: '50kb' }), (req, res) => {
+  const { routePoints } = req.body || {};
+
+  if (!Array.isArray(routePoints) || routePoints.length < 2) {
+    return res.status(400).json({ error: 'routePoints חייב להיות מערך עם לפחות 2 נקודות' });
+  }
+  if (routePoints.length > 500) {
+    return res.status(400).json({ error: 'routePoints לא יכול לעלות על 500 נקודות' });
+  }
+  for (const pt of routePoints) {
+    if (typeof pt.lat !== 'number' || typeof pt.lng !== 'number' ||
+        pt.lat < 29 || pt.lat > 34 || pt.lng < 34 || pt.lng > 36) {
+      return res.status(400).json({ error: 'קואורדינטות לא תקינות — חייבות להיות בתחום ישראל' });
+    }
+  }
+
+  const MATCH_RADIUS_M = 150;
+  const DEG_BUFFER     = MATCH_RADIUS_M / 111320 + 0.001; // ~0.0024 מעלות
+
+  // ── שלב 1: Bounding Box — סינון ראשוני מהיר ─────────────────────────────
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLng = Infinity, maxLng = -Infinity;
+  for (const pt of routePoints) {
+    if (pt.lat < minLat) minLat = pt.lat;
+    if (pt.lat > maxLat) maxLat = pt.lat;
+    if (pt.lng < minLng) minLng = pt.lng;
+    if (pt.lng > maxLng) maxLng = pt.lng;
+  }
+  minLat -= DEG_BUFFER; maxLat += DEG_BUFFER;
+  minLng -= DEG_BUFFER; maxLng += DEG_BUFFER;
+
+  const candidates = loadTrampitDb().points
+    .filter(p => p.safetyRating !== 'dangerous')
+    .filter(p => p.currentRoad > 0 || p.activeBusLinesCount > 0)
+    .filter(p => {
+      const { lat, lng } = p.coordinates;
+      return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+    });
+
+  // ── שלב 2: מרחק ניצב מינימלי למקטע המסלול ───────────────────────────────
+  // ממיר לקרטזי מקומי (מטרים) ומחשב מרחק ניצב לקו A→B
+  function distPointToSegment(pLat, pLng, aLat, aLng, bLat, bLng) {
+    const R      = 6371000;
+    const cosLat = Math.cos(((aLat + bLat) / 2) * Math.PI / 180);
+    const toM    = Math.PI / 180 * R;
+
+    const px = (pLng - aLng) * cosLat * toM;
+    const py = (pLat - aLat) * toM;
+    const bx = (bLng - aLng) * cosLat * toM;
+    const by = (bLat - aLat) * toM;
+
+    const segLenSq = bx * bx + by * by;
+    if (segLenSq === 0) return Math.sqrt(px * px + py * py);
+
+    const t  = Math.max(0, Math.min(1, (px * bx + py * by) / segLenSq));
+    const dx = px - t * bx;
+    const dy = py - t * by;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  const matched = [];
+
+  for (const junction of candidates) {
+    const { lat: jLat, lng: jLng } = junction.coordinates;
+    let minDist = Infinity;
+    let bestSeg = -1;
+
+    for (let i = 0; i < routePoints.length - 1; i++) {
+      const dist = distPointToSegment(
+        jLat, jLng,
+        routePoints[i].lat,     routePoints[i].lng,
+        routePoints[i + 1].lat, routePoints[i + 1].lng,
+      );
+      if (dist < minDist) { minDist = dist; bestSeg = i; }
+    }
+
+    if (minDist <= MATCH_RADIUS_M) {
+      matched.push({
+        id:                  junction.id,
+        name:                junction.name,
+        coordinates:         junction.coordinates,
+        currentRoad:         junction.currentRoad,
+        activeBusLinesCount: junction.activeBusLinesCount,
+        servedDestinations:  junction.servedDestinations,
+        safetyRating:        junction.safetyRating,
+        isVerified:          junction.activeBusLinesCount > 0,
+        distanceFromRoute:   Math.round(minDist),
+        _segIdx:             bestSeg,
+      });
+    }
+  }
+
+  // ── שלב 3: מיון כרונולוגי לפי סדר הנסיעה ────────────────────────────────
+  matched.sort((a, b) => a._segIdx - b._segIdx);
+
+  res.json({
+    total:             matched.length,
+    candidatesScanned: candidates.length,
+    junctions:         matched.map(({ _segIdx, ...j }) => j),
+  });
+});
+
+// ─── /api/nearestRoad — זיהוי כביש מ-GPS ────────────────────────────────────
+app.get('/api/nearestRoad', requireAuth, makeRateLimit('decision'), (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+  if (isNaN(lat) || isNaN(lng)) return res.status(400).json({ error: 'חסרים lat/lng' });
+
+  const SEARCH_RADIUS = 800; // מטר — בתוך הרדיוס הזה מחפשים נקודה קרובה
+  const points = loadTrampitDb().points
+    .filter(p => p.currentRoad > 0)
+    .map(p => ({ ...p, _dist: haversine(lat, lng, p.coordinates.lat, p.coordinates.lng) }))
+    .filter(p => p._dist < SEARCH_RADIUS)
+    .sort((a, b) => a._dist - b._dist);
+
+  if (points.length === 0) return res.json({ road: 0, pointName: null, distance: null });
+
+  const nearest = points[0];
+  res.json({
+    road:      nearest.currentRoad,
+    pointName: nearest.name,
+    distance:  Math.round(nearest._dist),
+  });
+});
+
 app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({ limit: '1kb' }), (req, res) => {
   const { userLat, userLng, destination, driverNextRoad } = req.body || {};
 
@@ -467,14 +713,27 @@ app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({
   const dest     = String(destination).trim().slice(0, 60);
   const nextRoad = Number(driverNextRoad) || 0;
 
-  const relevant = loadTrampitDb().points
+  const allPoints = loadTrampitDb().points
     .filter(p => p.safetyRating !== 'dangerous')
+    .filter(p => p.currentRoad > 0 || p.activeBusLinesCount > 0);
+
+  // נקודות רלוונטיות ליעד — עם fallback לנקודות הקרובות ביותר אם אין התאמה
+  let relevant = allPoints
     .filter(p => Array.isArray(p.servedDestinations) &&
-      p.servedDestinations.some(d => dest.includes(d) || d.includes(dest)))
+      p.servedDestinations.some(d => destinationMatchesCity(d, dest)))
     .sort((a, b) =>
       haversine(userLat, userLng, a.coordinates.lat, a.coordinates.lng) -
       haversine(userLat, userLng, b.coordinates.lat, b.coordinates.lng)
     );
+
+  // fallback: אם אין נקודות ליעד — קח את 5 הקרובות ביותר
+  if (relevant.length === 0) {
+    relevant = allPoints
+      .map(p => ({ ...p, _dist: haversine(userLat, userLng, p.coordinates.lat, p.coordinates.lng) }))
+      .filter(p => p._dist < 5000)
+      .sort((a, b) => a._dist - b._dist)
+      .slice(0, 5);
+  }
 
   const result = evaluateRouteDecision(
     { lat: userLat, lng: userLng },
@@ -482,7 +741,22 @@ app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({
     relevant.map(p => p.id)
   );
 
-  res.json(result);
+  // מחזיר גם את הנקודות הקרובות לתצוגה בUI
+  const nearbyPoints = allPoints
+    .map(p => ({ ...p, _dist: haversine(userLat, userLng, p.coordinates.lat, p.coordinates.lng) }))
+    .filter(p => p._dist < 3000)
+    .sort((a, b) => a._dist - b._dist)
+    .slice(0, 4)
+    .map(p => ({
+      id:          p.id,
+      name:        p.name,
+      distance:    Math.round(p._dist),
+      currentRoad: p.currentRoad,
+      activeBusLinesCount: p.activeBusLinesCount,
+      safetyRating: p.safetyRating,
+    }));
+
+  res.json({ ...result, nearbyPoints });
 });
 
 // ─── /api/transit — נתוני תחבורה ציבורית מהסדנה (GTFS + SIRI) ───────────────
@@ -717,5 +991,31 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(STATIC_DIR, 'index.html'));
 });
 
+// Sentry error handler — חייב להיות אחרי כל ה-routes ולפני ה-app.listen
+Sentry.setupExpressErrorHandler(app);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Trampit server running on port ${PORT}`));
+
+// ─── Graceful shutdown + crash handlers ──────────────────────────────────────
+function gracefulExit(code) {
+  flushSessionsSync();
+  process.exit(code);
+}
+
+// שגיאה לא-מטופלת — שולח ל-Sentry, שומר sessions ויוצא
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err.message, err.stack);
+  Sentry.captureException(err);
+  gracefulExit(1);
+});
+
+// Promise rejection לא-מטופל — שולח ל-Sentry, מדפיס בלבד
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+  Sentry.captureException(reason);
+});
+
+// סיום מסודר (Render שולח SIGTERM לפני restart)
+process.on('SIGTERM', () => { console.log('[SIGTERM] shutting down'); gracefulExit(0); });
+process.on('SIGINT',  () => { console.log('[SIGINT] shutting down');  gracefulExit(0); });

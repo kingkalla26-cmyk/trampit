@@ -5,9 +5,10 @@
 
 const fs   = require('fs');
 const path = require('path');
+const { destinationMatchesCity } = require('./normalizeCity');
 
 function loadDb() {
-  return JSON.parse(fs.readFileSync(path.join(__dirname, 'trampitPointsDb.v3.json'), 'utf8'));
+  return JSON.parse(fs.readFileSync(path.join(__dirname, 'trampitPointsDb.v4.json'), 'utf8'));
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -24,7 +25,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function pointServesDestination(point, userTargetDestination) {
   if (!userTargetDestination || !Array.isArray(point.servedDestinations)) return false;
   const target = userTargetDestination.trim();
-  return point.servedDestinations.some(d => target.includes(d) || d.includes(target));
+  return point.servedDestinations.some(d => destinationMatchesCity(d, target));
 }
 
 /**

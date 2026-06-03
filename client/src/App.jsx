@@ -10,21 +10,47 @@ import LoginScreen           from './components/LoginScreen.jsx';
 import SplashScreen          from './components/SplashScreen.jsx';
 import { JunctionProvider }  from './components/JunctionProvider.jsx';
 
+// מנסה כל 3 שניות עד שהשרת עונה — מטפל ב-cold start של Render
+async function wakeServer(onMessage) {
+  onMessage('מתחבר לשרת...');
+  let attempts = 0;
+  while (true) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 3000);
+      const r  = await fetch('/health', { signal: ctrl.signal });
+      clearTimeout(t);
+      if (r.ok) return;
+    } catch { /* timeout or network error — keep retrying */ }
+    attempts++;
+    if (attempts === 1) onMessage('השרת מתעורר, מיד מתחילים...');
+    await new Promise(res => setTimeout(res, 3000));
+  }
+}
+
 export default function App() {
-  const [cities,       setCities]       = useState([]);
-  const [authed,       setAuthed]       = useState(null);
+  const [cities,        setCities]        = useState([]);
+  const [authed,        setAuthed]        = useState(null);
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFading,  setSplashFading]  = useState(false);
+  const [wakeMessage,   setWakeMessage]   = useState('מתחבר לשרת...');
 
   useEffect(() => {
-    fetch('/api/cities', { credentials: 'include' })
-      .then(r => {
-        if (r.status === 401) { setAuthed(false); return null; }
-        setAuthed(true);
-        return r.json();
-      })
-      .then(d => setCities(Array.isArray(d) && d.length > 0 ? d : ISRAEL_CITIES))
-      .catch(() => { setAuthed(false); setCities(ISRAEL_CITIES); });
+    let cancelled = false;
+    async function init() {
+      await wakeServer(msg => { if (!cancelled) setWakeMessage(msg); });
+      if (cancelled) return;
+      fetch('/api/cities', { credentials: 'include' })
+        .then(r => {
+          if (r.status === 401) { setAuthed(false); return null; }
+          setAuthed(true);
+          return r.json();
+        })
+        .then(d => setCities(Array.isArray(d) && d.length > 0 ? d : ISRAEL_CITIES))
+        .catch(() => { setAuthed(false); setCities(ISRAEL_CITIES); });
+    }
+    init();
+    return () => { cancelled = true; };
   }, []);
 
   // כשהמצב ידוע — מתחיל fade-out, ואחרי 550ms מסיר לגמרי
@@ -38,7 +64,7 @@ export default function App() {
 
   return (
     <>
-      {splashVisible && <SplashScreen fading={splashFading} />}
+      {splashVisible && <SplashScreen fading={splashFading} message={wakeMessage} />}
 
       {authed !== null && (
         authed === false

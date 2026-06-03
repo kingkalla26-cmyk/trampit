@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import AutocompleteInput from './AutocompleteInput.jsx';
 
 const NAV_PATTERNS = [/waze\.com/i, /waze:\/\//i, /maps\.google\./i, /goo\.gl\/maps/i, /maps\.app\.goo\.gl/i];
@@ -8,11 +8,24 @@ function isNavLink(url) {
   catch { return false; }
 }
 
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function SearchForm({ form, setForm, onAnalyze, loading, cities = [] }) {
   const fileInputRef = useRef();
+  const [imageError, setImageError] = useState('');
 
   function handleFile(file) {
     if (!file) return;
+    if (!ALLOWED_TYPES.has(file.type)) {
+      setImageError('סוג קובץ לא נתמך — יש להעלות JPG, PNG או WebP בלבד');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setImageError('הקובץ גדול מדי — הגודל המקסימלי הוא 5MB');
+      return;
+    }
+    setImageError('');
     const reader = new FileReader();
     reader.onload = (ev) => {
       setForm(f => ({ ...f, uploadedImage: ev.target.result.split(',')[1], imagePreview: ev.target.result }));
@@ -150,8 +163,9 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
               </>
             )}
           </div>
+          {imageError && <div style={s.imageError}>{imageError}</div>}
           {form.imagePreview && (
-            <button style={s.clearBtn} onClick={() => setForm(f => ({ ...f, uploadedImage: null, imagePreview: null }))}>
+            <button style={s.clearBtn} onClick={() => { setForm(f => ({ ...f, uploadedImage: null, imagePreview: null })); setImageError(''); }}>
               ✕ הסר תמונה
             </button>
           )}
@@ -177,7 +191,7 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
 
       {/* PROMO BANNER */}
       <div style={s.promoBanner}>
-        ✨ גבריאל — הטבות בלעדיות מחכות לך בצמתים לאורך המסלול!
+        ✨ הטבות בלעדיות מחכות לך בצמתים לאורך המסלול!
       </div>
 
       {/* ANALYZE BUTTON */}
@@ -225,6 +239,7 @@ const s = {
   uploadZone: { border: '1.5px dashed #d1d5db', borderRadius: 12, padding: '24px 20px', textAlign: 'center', cursor: 'pointer', background: '#f9fafb' },
   uploadTitle:{ fontSize: 14, fontWeight: 600, color: '#1f2937', marginTop: 8 },
   uploadSub:  { fontSize: 12, color: '#4b5563', marginTop: 4 },
+  imageError: { fontSize: 12, color: '#dc2626', marginTop: 6, textAlign: 'center' },
   preview:    { width: '100%', borderRadius: 10, marginTop: 12, maxHeight: 200, objectFit: 'cover' },
   analyzeBtn: { background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', border: 'none', borderRadius: 14, padding: '16px 24px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: 'Heebo, sans-serif', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' },
   loadingBox: { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
