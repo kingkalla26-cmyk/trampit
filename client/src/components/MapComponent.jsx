@@ -5,7 +5,18 @@ import L from 'leaflet';
 import 'leaflet-rotate';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { IconPin, IconBus, IconNavigation, IconTarget, IconCompass } from '../icons.jsx';
+import { IconPin, IconBus, IconNavigation, IconTarget, IconCompass, IconLayers } from '../icons.jsx';
+
+const TILE_LAYERS = {
+  street: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics',
+  },
+};
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -107,6 +118,7 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
   const [bearing,          setBearing]          = useState(0);
   const [heading,          setHeading]          = useState(null);
   const [iosNeedsPerm,     setIosNeedsPerm]     = useState(false);
+  const [layer,            setLayer]            = useState('street');
 
   const mapRef        = useRef(null);
   const lastHUpdate   = useRef(0);
@@ -190,8 +202,9 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
         ref={mapRef}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          key={layer}
+          url={TILE_LAYERS[layer].url}
+          attribution={TILE_LAYERS[layer].attribution}
         />
 
         <FirstCenter gps={gps} />
@@ -276,6 +289,15 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
         </button>
       )}
 
+      {/* כפתור החלפת שכבת מפה — רגיל / לוויין */}
+      <button
+        style={st.layerBtn}
+        onClick={() => setLayer(l => l === 'street' ? 'satellite' : 'street')}
+        title={layer === 'street' ? 'עבור לתצוגת לוויין' : 'עבור לתצוגה רגילה'}
+      >
+        <IconLayers size={16} style={{ color: layer === 'satellite' ? 'var(--primary)' : 'var(--foreground)' }} />
+      </button>
+
       {/* מקרא */}
       <div style={st.legend}>
         <span style={st.legendItem}><span style={{ ...st.dot, background: 'var(--destructive)' }} />אתה</span>
@@ -314,6 +336,15 @@ const st = {
   },
   centerBtn: {
     position: 'absolute', top: 128, right: 10, zIndex: 1000,
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 10, width: 36, height: 36,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: 'var(--shadow-md)', padding: 0,
+    touchAction: 'manipulation',
+  },
+  layerBtn: {
+    position: 'absolute', top: 170, right: 10, zIndex: 1000,
     background: 'var(--card)', border: '1px solid var(--border)',
     borderRadius: 10, width: 36, height: 36,
     display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -217,6 +217,14 @@ export const IconCompass = ({ size, style }) => (
   </Ico>
 );
 
+export const IconLayers = ({ size, style }) => (
+  <Ico size={size} style={style}>
+    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+    <polyline points="2 17 12 22 22 17"/>
+    <polyline points="2 12 12 17 22 12"/>
+  </Ico>
+);
+
 export const IconCamera = ({ size, style }) => (
   <Ico size={size} style={style}>
     <path d="M4 8.5a1.5 1.5 0 0 1 1.5-1.5h2l1.2-1.8a1.5 1.5 0 0 1 1.25-.7h4.1a1.5 1.5 0 0 1 1.25.7L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/>

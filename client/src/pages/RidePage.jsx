@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from '../components/Layout.jsx';
 import {
   IconAlertCircle, IconCheckCircle, IconMap, IconSearch, IconClock,
-  IconPin, IconBus, IconRefresh, IconStopCircle, IconStar, IconNavigation, IconInfo,
+  IconPin, IconBus, IconRefresh, IconStopCircle, IconStar, IconNavigation,
 } from '../icons.jsx';
 
 const DECISION_STYLES = {
@@ -69,9 +69,6 @@ export default function RidePage() {
   const [gps,          setGps]         = useState(null);
   const [gpsError,     setGpsError]    = useState(false);
   const [destination,  setDest]        = useState('');
-  const [detectedRoad, setDetectedRoad] = useState(0);
-  const [roadName,     setRoadName]    = useState('');
-  const [roadOverride, setRoadOverride] = useState('');
   const [active,       setActive]      = useState(false);
   const [loading,      setLoading]     = useState(false);
   const [result,       setResult]      = useState(null);
@@ -99,15 +96,6 @@ export default function RidePage() {
     );
     return () => navigator.geolocation.clearWatch(id);
   }, []);
-
-  // ── זיהוי כביש אוטומטי ─────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!gps) return;
-    fetch(`/api/nearestRoad?lat=${gps.lat}&lng=${gps.lng}`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.road > 0) { setDetectedRoad(d.road); setRoadName(d.pointName || ''); } })
-      .catch(() => {});
-  }, [gps?.lat?.toFixed(3), gps?.lng?.toFixed(3)]);
 
   // ── Plan route ──────────────────────────────────────────────────────────────
   async function planRoute() {
@@ -147,12 +135,11 @@ export default function RidePage() {
     setLoading(true);
     setError('');
     try {
-      const effectiveRoad = roadOverride ? Number(roadOverride) : detectedRoad;
       const res  = await fetch('/api/decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ userLat: gpsNow.lat, userLng: gpsNow.lng, destination: destination.trim(), driverNextRoad: effectiveRoad }),
+        body: JSON.stringify({ userLat: gpsNow.lat, userLng: gpsNow.lng, destination: destination.trim() }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'שגיאה'); return; }
@@ -164,7 +151,7 @@ export default function RidePage() {
       prevDecision.current = data.decision;
     } catch { setError('שגיאת חיבור — בודק שוב...'); }
     finally  { setLoading(false); }
-  }, [destination, detectedRoad, roadOverride]);
+  }, [destination]);
 
   useEffect(() => {
     if (!active) { clearInterval(intervalRef.current); clearInterval(countdownRef.current); setCountdown(0); return; }
@@ -182,8 +169,7 @@ export default function RidePage() {
   }
   function stopRide() { setActive(false); setResult(null); setLastCheck(null); prevDecision.current = null; }
 
-  const ds            = result ? (DECISION_STYLES[result.decision] || DECISION_STYLES.continue_ride) : null;
-  const effectiveRoad = roadOverride ? Number(roadOverride) : detectedRoad;
+  const ds = result ? (DECISION_STYLES[result.decision] || DECISION_STYLES.continue_ride) : null;
 
   return (
     <Layout>
@@ -266,21 +252,6 @@ export default function RidePage() {
           />
         </div>
 
-        <div style={s.roadCard}>
-          <div style={s.roadRow}>
-            <span style={s.roadLabel}>כביש שזוהה:</span>
-            <span style={{ ...s.roadBadge, background: detectedRoad > 0 ? 'rgba(var(--primary-rgb),0.12)' : 'var(--muted)', color: detectedRoad > 0 ? 'var(--primary)' : 'var(--muted-foreground)' }}>
-              {detectedRoad > 0 ? `כביש ${detectedRoad}` : 'לא זוהה'}
-            </span>
-            {roadName && <span style={s.roadName}>ליד {roadName}</span>}
-          </div>
-          <div style={s.roadOverrideRow}>
-            <label style={s.label}>עקוף ידני:</label>
-            <input style={{ ...s.input, ...s.roadInput }} type="number" placeholder="מספר כביש..." value={roadOverride} onChange={e => setRoadOverride(e.target.value)} />
-          </div>
-          {effectiveRoad > 0 && <div style={s.roadActive}>✓ בודק על בסיס כביש {effectiveRoad}</div>}
-        </div>
-
         {error && <div style={s.error}>{error}</div>}
 
         {!active ? (
@@ -312,28 +283,6 @@ export default function RidePage() {
           </div>
         )}
 
-        {result?.nearbyPoints?.length > 0 && (
-          <div style={s.nearbySection}>
-            <div style={s.nearbyTitle}><IconPin size={15} style={{ color: 'var(--primary)' }} /> נקודות טרמפ בסביבה</div>
-            {result.nearbyPoints.map(pt => (
-              <div key={pt.id} style={s.nearbyRow}>
-                <div style={s.nearbyLeft}>
-                  <div style={s.nearbyName}>{pt.name}</div>
-                  {pt.currentRoad > 0 && <div style={s.nearbyMeta}>כביש {pt.currentRoad}</div>}
-                </div>
-                <div style={s.nearbyRight}>
-                  <div style={s.nearbyDist}>{fmtDist(pt.distance)}</div>
-                  {pt.activeBusLinesCount > 0 && <div style={s.nearbyBus}><IconBus size={11} style={{ display: 'inline', verticalAlign: '-2px' }} /> {pt.activeBusLinesCount}</div>}
-                  <div style={{ ...s.nearbyDot, background: pt.safetyRating === 'safe' ? 'var(--accent)' : 'var(--warning)' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={s.hint}>
-          <IconInfo size={13} style={{ display: 'inline', verticalAlign: '-2px', color: 'var(--muted-foreground)' }} /> הנתונים מבוססים על {(3027).toLocaleString()} נקודות מאומתות.
-        </div>
       </div>
 
       <style>{`
@@ -382,15 +331,6 @@ const s = {
   label: { fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' },
   input: { background: 'var(--muted)', border: '1.5px solid transparent', borderRadius: 10, padding: '12px 14px', fontSize: 15, color: 'var(--foreground)', fontFamily: 'var(--font-body)', direction: 'rtl', outline: 'none', boxSizing: 'border-box', width: '100%' },
 
-  roadCard:        { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 },
-  roadRow:         { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  roadLabel:       { fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 600 },
-  roadBadge:       { fontSize: 13, fontWeight: 700, padding: '3px 10px', borderRadius: 20 },
-  roadName:        { fontSize: 11, color: 'var(--muted-foreground)' },
-  roadOverrideRow: { display: 'flex', alignItems: 'center', gap: 8 },
-  roadInput:       { width: 120, padding: '8px 12px', fontSize: 14 },
-  roadActive:      { fontSize: 12, color: 'var(--accent)', fontWeight: 600 },
-
   error:    { background: 'rgba(var(--destructive-rgb),0.06)', border: '1px solid rgba(var(--destructive-rgb),0.25)', borderRadius: 8, padding: '10px 14px', color: 'var(--destructive)', fontSize: 13 },
   startBtn: { height: 56, background: 'var(--accent)', border: 'none', borderRadius: 12, padding: '0 16px', color: 'var(--accent-foreground)', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-heading)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 },
 
@@ -408,18 +348,6 @@ const s = {
   confidence:   { fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 },
   lastCheckTime:{ color: 'var(--border)' },
 
-  nearbySection: { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' },
-  nearbyTitle:   { fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 700, color: 'var(--foreground)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 },
-  nearbyRow:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, marginBottom: 8, borderBottom: '1px solid var(--muted)' },
-  nearbyLeft:    { flex: 1, minWidth: 0 },
-  nearbyName:    { fontSize: 14, fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  nearbyMeta:    { fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 },
-  nearbyRight:   { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 },
-  nearbyDist:    { fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500, color: 'var(--primary)' },
-  nearbyBus:     { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--accent)', background: 'rgba(var(--accent-rgb),0.08)', padding: '2px 6px', borderRadius: 6 },
-  nearbyDot:     { width: 8, height: 8, borderRadius: '50%' },
-
-  hint: { fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', lineHeight: 1.6, padding: '0 8px' },
 };
 
 const xs = {

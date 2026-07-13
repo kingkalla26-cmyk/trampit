@@ -1,6 +1,6 @@
 {
   "systemVersion": "4.0.0",
-  "generatedAt": "2026-05-31T11:04:07.277Z",
+  "generatedAt": "2026-07-13T20:09:01.888Z",
   "source": "7 district files (verified trampit points) + OSM v3 supplement",
   "totalPoints": 3078,
   "fromDistricts": 2625,
@@ -730,8 +730,8 @@
       "osmId": 679437354,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.2327191,
-        "lng": 35.7566673
+        "lat": 33.232493,
+        "lng": 35.755843
       },
       "currentRoad": 98,
       "roadType": "interchange",
@@ -1144,8 +1144,8 @@
       "osmId": 6004513033,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.2221005,
-        "lng": 35.5747758
+        "lat": 33.221897,
+        "lng": 35.575429
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -1816,8 +1816,8 @@
       "osmId": 6004513034,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.1695952,
-        "lng": 35.5699355
+        "lat": 33.169674,
+        "lng": 35.570444
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -2168,8 +2168,8 @@
       "osmId": 343564063,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.1208368,
-        "lng": 35.6483645
+        "lat": 33.1213429,
+        "lng": 35.6487254
       },
       "currentRoad": 918,
       "roadType": "urban_junction",
@@ -2329,8 +2329,8 @@
       "osmId": 519388168,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.112802,
-        "lng": 35.5490699
+        "lat": 33.112706,
+        "lng": 35.548329
       },
       "currentRoad": 886,
       "roadType": "urban_junction",
@@ -2791,8 +2791,8 @@
       "osmId": 5521451391,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.0749608,
-        "lng": 35.1157313
+        "lat": 33.074961,
+        "lng": 35.116242
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -2960,8 +2960,8 @@
       "osmId": 5381129012,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.0707426,
-        "lng": 35.152395
+        "lat": 33.070943,
+        "lng": 35.152072
       },
       "currentRoad": 899,
       "roadType": "urban_junction",
@@ -4585,8 +4585,8 @@
       "osmId": 10974589020,
       "stopId": 0,
       "coordinates": {
-        "lat": 33.0154602,
-        "lng": 35.1032086
+        "lat": 33.014816,
+        "lng": 35.102809
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -5739,8 +5739,8 @@
       "osmId": 6004513037,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.990237,
-        "lng": 35.5612597
+        "lat": 32.989769,
+        "lng": 35.560826
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -5846,8 +5846,8 @@
       "osmId": 5758353084,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9890243,
-        "lng": 35.4836707
+        "lat": 32.989199,
+        "lng": 35.48398
       },
       "currentRoad": 89,
       "roadType": "interchange",
@@ -5869,8 +5869,8 @@
       "osmId": 8696550160,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.988359,
-        "lng": 35.4431366
+        "lat": 32.987979,
+        "lng": 35.443092
       },
       "currentRoad": 89,
       "roadType": "interchange",
@@ -5970,8 +5970,8 @@
       "osmId": 270709585,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9862511,
-        "lng": 35.7505475
+        "lat": 32.986218,
+        "lng": 35.750011
       },
       "currentRoad": 87,
       "roadType": "interchange",
@@ -5993,8 +5993,8 @@
       "osmId": 9087427694,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9859396,
-        "lng": 35.1481964
+        "lat": 32.986547,
+        "lng": 35.14796
       },
       "currentRoad": 70,
       "roadType": "interchange",
@@ -6315,8 +6315,8 @@
       "osmId": 6943876166,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9804553,
-        "lng": 35.0942477
+        "lat": 32.980247,
+        "lng": 35.095116
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -7807,8 +7807,8 @@
       "osmId": 12088965039,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9324266,
-        "lng": 35.3685355
+        "lat": 32.931832,
+        "lng": 35.368163
       },
       "currentRoad": 85,
       "roadType": "interchange",
@@ -8121,8 +8121,8 @@
       "osmId": 12088978479,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9275664,
-        "lng": 35.4058561
+        "lat": 32.927234,
+        "lng": 35.406429
       },
       "currentRoad": 85,
       "roadType": "interchange",
@@ -8266,8 +8266,8 @@
       "osmId": 6004757344,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9247691,
-        "lng": 35.2990497
+        "lat": 32.925538,
+        "lng": 35.299215
       },
       "currentRoad": 85,
       "roadType": "interchange",
@@ -8346,8 +8346,8 @@
       "osmId": 7303956875,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9238271,
-        "lng": 35.2799265
+        "lat": 32.924138,
+        "lng": 35.27991
       },
       "currentRoad": 8534,
       "roadType": "urban_junction",
@@ -8466,8 +8466,8 @@
       "osmId": 7303956880,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9225651,
-        "lng": 35.2806294
+        "lat": 32.9221168,
+        "lng": 35.2804794
       },
       "currentRoad": 784,
       "roadType": "urban_junction",
@@ -8943,8 +8943,8 @@
       "osmId": 3373841837,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.9134269,
-        "lng": 35.5435212
+        "lat": 32.913386,
+        "lng": 35.542509
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -10334,8 +10334,8 @@
       "osmId": 509243958,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.882455,
-        "lng": 35.6605739
+        "lat": 32.8829092,
+        "lng": 35.6607332
       },
       "currentRoad": 92,
       "roadType": "interchange",
@@ -11847,8 +11847,8 @@
       "osmId": 332640119,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8572803,
-        "lng": 35.4004064
+        "lat": 32.857332,
+        "lng": 35.399975
       },
       "currentRoad": 805,
       "roadType": "urban_junction",
@@ -12168,8 +12168,8 @@
       "osmId": 1933360021,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8470145,
-        "lng": 35.0920962
+        "lat": 32.84667,
+        "lng": 35.092454
       },
       "currentRoad": 79,
       "roadType": "interchange",
@@ -12368,8 +12368,8 @@
       "osmId": 5842186284,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8433647,
-        "lng": 35.4329439
+        "lat": 32.843701,
+        "lng": 35.432423
       },
       "currentRoad": 65,
       "roadType": "interchange",
@@ -13005,8 +13005,8 @@
       "osmId": 5426854485,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8315358,
-        "lng": 35.2358915
+        "lat": 32.831685,
+        "lng": 35.236705
       },
       "currentRoad": 784,
       "roadType": "urban_junction",
@@ -14116,8 +14116,8 @@
       "osmId": 4321012906,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8174812,
-        "lng": 35.0775018
+        "lat": 32.81789,
+        "lng": 35.077712
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -14584,8 +14584,8 @@
       "osmId": 1752565034,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8123986,
-        "lng": 35.0714956
+        "lat": 32.811661,
+        "lng": 35.071139
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -14808,8 +14808,8 @@
       "osmId": 4969057746,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8104576,
-        "lng": 35.1387629
+        "lat": 32.810304,
+        "lng": 35.138321
       },
       "currentRoad": 79,
       "roadType": "interchange",
@@ -15323,8 +15323,8 @@
       "osmId": 4955482877,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.806691,
-        "lng": 35.1457757
+        "lat": 32.807002,
+        "lng": 35.14568
       },
       "currentRoad": 79,
       "roadType": "interchange",
@@ -15988,8 +15988,8 @@
       "osmId": 308798864,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.8005377,
-        "lng": 35.0224196
+        "lat": 32.800097,
+        "lng": 35.021714
       },
       "currentRoad": 22,
       "roadType": "interchange",
@@ -17433,8 +17433,8 @@
       "osmId": 7602657359,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7906998,
-        "lng": 35.0029822
+        "lat": 32.790837,
+        "lng": 35.0034
       },
       "currentRoad": 23,
       "roadType": "interchange",
@@ -17597,8 +17597,8 @@
       "osmId": 2117551323,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7897136,
-        "lng": 34.9865665
+        "lat": 32.788997,
+        "lng": 34.986546
       },
       "currentRoad": 672,
       "roadType": "urban_junction",
@@ -19409,8 +19409,8 @@
       "osmId": 259990254,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7682926,
-        "lng": 35.0511015
+        "lat": 32.767889,
+        "lng": 35.051045
       },
       "currentRoad": 752,
       "roadType": "urban_junction",
@@ -21456,8 +21456,8 @@
       "osmId": 7711846700,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7350163,
-        "lng": 35.2634792
+        "lat": 32.735185,
+        "lng": 35.2638
       },
       "currentRoad": 79,
       "roadType": "interchange",
@@ -22739,8 +22739,8 @@
       "osmId": 6054705007,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7144171,
-        "lng": 35.5468319
+        "lat": 32.714805,
+        "lng": 35.547496
       },
       "currentRoad": 767,
       "roadType": "urban_junction",
@@ -22762,8 +22762,8 @@
       "osmId": 270200492,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7141003,
-        "lng": 34.970596
+        "lat": 32.7147088,
+        "lng": 34.9704387
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -23298,8 +23298,8 @@
       "osmId": 1318560469,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7096678,
-        "lng": 35.1364784
+        "lat": 32.709901,
+        "lng": 35.136006
       },
       "currentRoad": 75,
       "roadType": "interchange",
@@ -24273,8 +24273,8 @@
       "osmId": 11014850719,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.7003351,
-        "lng": 35.2077606
+        "lat": 32.7004349,
+        "lng": 35.2076009
       },
       "currentRoad": 75,
       "roadType": "interchange",
@@ -25497,8 +25497,8 @@
       "osmId": 2957121119,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.6828659,
-        "lng": 35.1222692
+        "lat": 32.682793,
+        "lng": 35.121891
       },
       "currentRoad": 722,
       "roadType": "urban_junction",
@@ -25909,8 +25909,8 @@
       "osmId": 1998227511,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.6726636,
-        "lng": 35.1084761
+        "lat": 32.6730473,
+        "lng": 35.1079508
       },
       "currentRoad": 722,
       "roadType": "urban_junction",
@@ -25931,8 +25931,8 @@
       "osmId": 9490885706,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.6723725,
-        "lng": 35.1093535
+        "lat": 32.6720689,
+        "lng": 35.1093764
       },
       "currentRoad": 66,
       "roadType": "interchange",
@@ -26474,8 +26474,8 @@
       "osmId": 12947158897,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.6500115,
-        "lng": 35.3727781
+        "lat": 32.650096,
+        "lng": 35.373165
       },
       "currentRoad": 65,
       "roadType": "interchange",
@@ -27252,8 +27252,8 @@
       "osmId": 1929462513,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.6238784,
-        "lng": 35.2894481
+        "lat": 32.624033,
+        "lng": 35.289773
       },
       "currentRoad": 60,
       "roadType": "interchange",
@@ -29019,8 +29019,8 @@
       "osmId": 9009722001,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.5579191,
-        "lng": 35.3675459
+        "lat": 32.557773,
+        "lng": 35.367711
       },
       "currentRoad": 71,
       "roadType": "interchange",
@@ -30519,8 +30519,8 @@
       "osmId": 951497402,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.5076049,
-        "lng": 35.5191683
+        "lat": 32.507867,
+        "lng": 35.518727
       },
       "currentRoad": 71,
       "roadType": "interchange",
@@ -30623,8 +30623,8 @@
       "osmId": 267120796,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.5051502,
-        "lng": 34.9149799
+        "lat": 32.505068,
+        "lng": 34.915857
       },
       "currentRoad": 6511,
       "roadType": "urban_junction",
@@ -33373,8 +33373,8 @@
       "osmId": 6920208931,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.4095244,
-        "lng": 34.9037599
+        "lat": 32.40895,
+        "lng": 34.903447
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -33695,8 +33695,8 @@
       "osmId": 8771910218,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.394068,
-        "lng": 34.9031944
+        "lat": 32.394661,
+        "lng": 34.903398
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -33740,8 +33740,8 @@
       "osmId": 9132799546,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.3938843,
-        "lng": 34.9118357
+        "lat": 32.393824,
+        "lng": 34.911999
       },
       "currentRoad": 581,
       "roadType": "urban_junction",
@@ -34222,8 +34222,8 @@
       "osmId": 34495875,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.3587057,
-        "lng": 34.8706149
+        "lat": 32.359466,
+        "lng": 34.87036
       },
       "currentRoad": 5710,
       "roadType": "urban_junction",
@@ -34685,8 +34685,8 @@
       "osmId": 343697558,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.3234362,
-        "lng": 34.9036234
+        "lat": 32.323644,
+        "lng": 34.902989
       },
       "currentRoad": 57,
       "roadType": "interchange",
@@ -36441,8 +36441,8 @@
       "osmId": 359684298,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.2350011,
-        "lng": 34.8858876
+        "lat": 32.235422,
+        "lng": 34.885989
       },
       "currentRoad": 551,
       "roadType": "urban_junction",
@@ -37013,8 +37013,8 @@
       "osmId": 390311385,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.2101787,
-        "lng": 34.8836909
+        "lat": 32.209417,
+        "lng": 34.883706
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -37853,8 +37853,8 @@
       "osmId": 1488492718,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1771436,
-        "lng": 34.8896785
+        "lat": 32.176504,
+        "lng": 34.890005
       },
       "currentRoad": 402,
       "roadType": "urban_junction",
@@ -37967,8 +37967,8 @@
       "osmId": 1264653479,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1761675,
-        "lng": 34.8161693
+        "lat": 32.176059,
+        "lng": 34.81582
       },
       "currentRoad": 2,
       "roadType": "interchange",
@@ -38400,8 +38400,8 @@
       "osmId": 3248481726,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1674202,
-        "lng": 34.917625
+        "lat": 32.167612,
+        "lng": 34.917442
       },
       "currentRoad": 531,
       "roadType": "interchange",
@@ -38467,8 +38467,8 @@
       "osmId": 2221484982,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1646464,
-        "lng": 34.8173812
+        "lat": 32.164347,
+        "lng": 34.816742
       },
       "currentRoad": 20,
       "roadType": "interchange",
@@ -39180,8 +39180,8 @@
       "osmId": 320115324,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1415739,
-        "lng": 34.8025286
+        "lat": 32.14144,
+        "lng": 34.801762
       },
       "currentRoad": 5,
       "roadType": "interchange",
@@ -39546,8 +39546,8 @@
       "osmId": 1334561950,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1332401,
-        "lng": 34.8332065
+        "lat": 32.1338239,
+        "lng": 34.8334076
       },
       "currentRoad": 482,
       "roadType": "urban_junction",
@@ -39705,8 +39705,8 @@
       "osmId": 1644880114,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1293459,
-        "lng": 34.9025595
+        "lat": 32.12874,
+        "lng": 34.902796
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -39959,8 +39959,8 @@
       "osmId": 2863669904,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1224567,
-        "lng": 34.9035599
+        "lat": 32.12281,
+        "lng": 34.903897
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -40926,8 +40926,8 @@
       "osmId": 4911202794,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.1067456,
-        "lng": 34.999554
+        "lat": 32.107422,
+        "lng": 34.999199
       },
       "currentRoad": 5,
       "roadType": "interchange",
@@ -41471,8 +41471,8 @@
       "osmId": 7613276255,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0968065,
-        "lng": 34.9016455
+        "lat": 32.096031,
+        "lng": 34.901577
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -41565,8 +41565,8 @@
       "osmId": 7419822223,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0950141,
-        "lng": 34.9374238
+        "lat": 32.095506,
+        "lng": 34.936938
       },
       "currentRoad": 444,
       "roadType": "urban_junction",
@@ -43479,8 +43479,8 @@
       "osmId": 2473215574,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0675284,
-        "lng": 34.9032698
+        "lat": 32.0680068,
+        "lng": 34.9033541
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -44600,8 +44600,8 @@
       "osmId": 1306889512,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0376308,
-        "lng": 34.8322953
+        "lat": 32.037455,
+        "lng": 34.832327
       },
       "currentRoad": 461,
       "roadType": "urban_junction",
@@ -44803,8 +44803,8 @@
       "osmId": 7419826167,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0345226,
-        "lng": 34.9558082
+        "lat": 32.034423,
+        "lng": 34.95686
       },
       "currentRoad": 444,
       "roadType": "urban_junction",
@@ -45218,8 +45218,8 @@
       "osmId": 12903504842,
       "stopId": 0,
       "coordinates": {
-        "lat": 32.0274182,
-        "lng": 34.8802712
+        "lat": 32.026776,
+        "lng": 34.879694
       },
       "currentRoad": 461,
       "roadType": "urban_junction",
@@ -46590,8 +46590,8 @@
       "osmId": 1547454186,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9918924,
-        "lng": 34.9078032
+        "lat": 31.991429,
+        "lng": 34.906913
       },
       "currentRoad": 46,
       "roadType": "interchange",
@@ -47733,8 +47733,8 @@
       "osmId": 1516998213,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9692494,
-        "lng": 34.8437008
+        "lat": 31.969932,
+        "lng": 34.843347
       },
       "currentRoad": 44,
       "roadType": "interchange",
@@ -47874,8 +47874,8 @@
       "osmId": 17704005,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9660825,
-        "lng": 34.7868827
+        "lat": 31.966063,
+        "lng": 34.785934
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -49076,8 +49076,8 @@
       "osmId": 1835701987,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9385083,
-        "lng": 34.8658693
+        "lat": 31.9393262,
+        "lng": 34.8658007
       },
       "currentRoad": 44,
       "roadType": "interchange",
@@ -50291,8 +50291,8 @@
       "osmId": 3662206438,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9166136,
-        "lng": 34.8872812
+        "lat": 31.916722,
+        "lng": 34.887237
       },
       "currentRoad": 44,
       "roadType": "interchange",
@@ -50981,8 +50981,8 @@
       "osmId": 2032916176,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.9021425,
-        "lng": 34.763679
+        "lat": 31.902303,
+        "lng": 34.763962
       },
       "currentRoad": 42,
       "roadType": "interchange",
@@ -52887,8 +52887,8 @@
       "osmId": 1290322120,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8710082,
-        "lng": 35.1771953
+        "lat": 31.870318,
+        "lng": 35.176882
       },
       "currentRoad": 443,
       "roadType": "interchange",
@@ -54498,8 +54498,8 @@
       "osmId": 10979010527,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8349741,
-        "lng": 34.9775594
+        "lat": 31.835518,
+        "lng": 34.977318
       },
       "currentRoad": 3,
       "roadType": "interchange",
@@ -55186,8 +55186,8 @@
       "osmId": 472536691,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.822855,
-        "lng": 34.7068481
+        "lat": 31.823036,
+        "lng": 34.706389
       },
       "currentRoad": 7,
       "roadType": "interchange",
@@ -55409,8 +55409,8 @@
       "osmId": 5105087456,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8197718,
-        "lng": 34.7296267
+        "lat": 31.819487,
+        "lng": 34.729208
       },
       "currentRoad": 4000,
       "roadType": "urban_junction",
@@ -55775,8 +55775,8 @@
       "osmId": 6090661705,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8143836,
-        "lng": 35.3494369
+        "lat": 31.814301,
+        "lng": 35.35026
       },
       "currentRoad": 1,
       "roadType": "interchange",
@@ -56643,8 +56643,8 @@
       "osmId": 6344479575,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8060988,
-        "lng": 35.2176918
+        "lat": 31.806057,
+        "lng": 35.216797
       },
       "currentRoad": 1,
       "roadType": "interchange",
@@ -56665,8 +56665,8 @@
       "osmId": 1295953806,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.8060934,
-        "lng": 35.2038969
+        "lat": 31.806286,
+        "lng": 35.204892
       },
       "currentRoad": 436,
       "roadType": "urban_junction",
@@ -57488,8 +57488,8 @@
       "osmId": 8007475392,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7993865,
-        "lng": 35.4903725
+        "lat": 31.799883,
+        "lng": 35.490647
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -57706,8 +57706,8 @@
       "osmId": 3707553083,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7977912,
-        "lng": 35.1457059
+        "lat": 31.7978712,
+        "lng": 35.1455312
       },
       "currentRoad": 3965,
       "roadType": "urban_junction",
@@ -58007,8 +58007,8 @@
       "osmId": 7692315458,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7911471,
-        "lng": 35.1984881
+        "lat": 31.790818,
+        "lng": 35.197613
       },
       "currentRoad": 50,
       "roadType": "interchange",
@@ -58685,8 +58685,8 @@
       "osmId": 5403996565,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7820963,
-        "lng": 35.1768146
+        "lat": 31.782798,
+        "lng": 35.177047
       },
       "currentRoad": 16,
       "roadType": "interchange",
@@ -59463,8 +59463,8 @@
       "osmId": 1168569236,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7708219,
-        "lng": 35.1946988
+        "lat": 31.771176,
+        "lng": 35.194157
       },
       "currentRoad": 50,
       "roadType": "interchange",
@@ -59853,8 +59853,8 @@
       "osmId": 7919561414,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.767506,
-        "lng": 35.1922453
+        "lat": 31.767336,
+        "lng": 35.193158
       },
       "currentRoad": 16,
       "roadType": "interchange",
@@ -60187,8 +60187,8 @@
       "osmId": 6038310109,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.760594,
-        "lng": 34.7846896
+        "lat": 31.761327,
+        "lng": 34.784898
       },
       "currentRoad": 3,
       "roadType": "interchange",
@@ -60650,8 +60650,8 @@
       "osmId": 296531576,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7487232,
-        "lng": 34.9747217
+        "lat": 31.748264,
+        "lng": 34.973924
       },
       "currentRoad": 38,
       "roadType": "interchange",
@@ -61185,8 +61185,8 @@
       "osmId": 1298577318,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7331117,
-        "lng": 34.7579825
+        "lat": 31.733318,
+        "lng": 34.758458
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -61314,8 +61314,8 @@
       "osmId": 8284498162,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7317244,
-        "lng": 35.2026842
+        "lat": 31.7312617,
+        "lng": 35.2020815
       },
       "currentRoad": 50,
       "roadType": "interchange",
@@ -61490,8 +61490,8 @@
       "osmId": 6013351625,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.724308,
-        "lng": 34.6357606
+        "lat": 31.724006,
+        "lng": 34.635428
       },
       "currentRoad": 232,
       "roadType": "urban_junction",
@@ -61649,8 +61649,8 @@
       "osmId": 1111604701,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7197044,
-        "lng": 34.9642112
+        "lat": 31.720202,
+        "lng": 34.964246
       },
       "currentRoad": 38,
       "roadType": "interchange",
@@ -62009,8 +62009,8 @@
       "osmId": 5693376871,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.7022472,
-        "lng": 34.9431157
+        "lat": 31.702296,
+        "lng": 34.94281
       },
       "currentRoad": 38,
       "roadType": "interchange",
@@ -62260,8 +62260,8 @@
       "osmId": 6379379028,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6824335,
-        "lng": 34.6517311
+        "lat": 31.6824,
+        "lng": 34.651124
       },
       "currentRoad": 3,
       "roadType": "interchange",
@@ -62328,8 +62328,8 @@
       "osmId": 6013351621,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6761066,
-        "lng": 34.609694
+        "lat": 31.676073,
+        "lng": 34.610484
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -62536,8 +62536,8 @@
       "osmId": 6013351619,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6658183,
-        "lng": 34.6067237
+        "lat": 31.665272,
+        "lng": 34.606541
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -62692,8 +62692,8 @@
       "osmId": 10242923626,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6531406,
-        "lng": 34.6636608
+        "lat": 31.652563,
+        "lng": 34.663338
       },
       "currentRoad": 35,
       "roadType": "interchange",
@@ -62799,8 +62799,8 @@
       "osmId": 6013351623,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6509069,
-        "lng": 34.7648635
+        "lat": 31.650359,
+        "lng": 34.764905
       },
       "currentRoad": 353,
       "roadType": "urban_junction",
@@ -62975,8 +62975,8 @@
       "osmId": 11085704134,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6461569,
-        "lng": 35.1321052
+        "lat": 31.646587,
+        "lng": 35.131452
       },
       "currentRoad": 60,
       "roadType": "interchange",
@@ -62997,8 +62997,8 @@
       "osmId": 6013351620,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6459348,
-        "lng": 34.6996335
+        "lat": 31.646115,
+        "lng": 34.699123
       },
       "currentRoad": 35,
       "roadType": "interchange",
@@ -63276,8 +63276,8 @@
       "osmId": 1297544962,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.6255879,
-        "lng": 34.7571091
+        "lat": 31.625608,
+        "lng": 34.756787
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -63520,8 +63520,8 @@
       "osmId": 6038375263,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.5884158,
-        "lng": 34.5634071
+        "lat": 31.588885,
+        "lng": 34.563847
       },
       "currentRoad": 4,
       "roadType": "interchange",
@@ -63592,8 +63592,8 @@
       "osmId": 349075231,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.5687768,
-        "lng": 34.6433028
+        "lat": 31.568544,
+        "lng": 34.643787
       },
       "currentRoad": 232,
       "roadType": "urban_junction",
@@ -63637,8 +63637,8 @@
       "osmId": 252195719,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.5590473,
-        "lng": 35.4030395
+        "lat": 31.559369,
+        "lng": 35.403501
       },
       "currentRoad": 90,
       "roadType": "interchange",
@@ -64186,8 +64186,8 @@
       "osmId": 5088727712,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.4698828,
-        "lng": 34.528763
+        "lat": 31.470421,
+        "lng": 34.529233
       },
       "currentRoad": 25,
       "roadType": "interchange",
@@ -65893,8 +65893,8 @@
       "osmId": 279059385,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.3774249,
-        "lng": 35.0039162
+        "lat": 31.3781309,
+        "lng": 35.0042781
       },
       "currentRoad": 60,
       "roadType": "interchange",
@@ -66049,8 +66049,8 @@
       "osmId": 1588334891,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.3725709,
-        "lng": 34.7954379
+        "lat": 31.372463,
+        "lng": 34.796036
       },
       "currentRoad": 310,
       "roadType": "urban_junction",
@@ -66886,8 +66886,8 @@
       "osmId": 5903903577,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.3296324,
-        "lng": 34.700005
+        "lat": 31.330095,
+        "lng": 34.699301
       },
       "currentRoad": 310,
       "roadType": "urban_junction",
@@ -67340,8 +67340,8 @@
       "osmId": 1307500452,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.3162823,
-        "lng": 34.5251482
+        "lat": 31.316252,
+        "lng": 34.524492
       },
       "currentRoad": 234,
       "roadType": "urban_junction",
@@ -67660,8 +67660,8 @@
       "osmId": 6547532055,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.3082346,
-        "lng": 34.9024746
+        "lat": 31.308225,
+        "lng": 34.902813
       },
       "currentRoad": 60,
       "roadType": "interchange",
@@ -68803,8 +68803,8 @@
       "osmId": 4741588613,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.2594677,
-        "lng": 35.06074
+        "lat": 31.259346,
+        "lng": 35.061391
       },
       "currentRoad": 31,
       "roadType": "interchange",
@@ -69231,8 +69231,8 @@
       "osmId": 6757256005,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.2546012,
-        "lng": 35.1608798
+        "lat": 31.254804,
+        "lng": 35.16025
       },
       "currentRoad": 31,
       "roadType": "interchange",
@@ -69299,8 +69299,8 @@
       "osmId": 6013180993,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.2540745,
-        "lng": 35.1246054
+        "lat": 31.254104,
+        "lng": 35.123764
       },
       "currentRoad": 31,
       "roadType": "interchange",
@@ -70015,8 +70015,8 @@
       "osmId": 6013180992,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.2438823,
-        "lng": 34.7934992
+        "lat": 31.24431,
+        "lng": 34.792793
       },
       "currentRoad": 25,
       "roadType": "interchange",
@@ -70768,8 +70768,8 @@
       "osmId": 288297414,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.2127191,
-        "lng": 34.5314107
+        "lat": 31.213137,
+        "lng": 34.530933
       },
       "currentRoad": 222,
       "roadType": "urban_junction",
@@ -71044,8 +71044,8 @@
       "osmId": 1854917816,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.1911121,
-        "lng": 34.8055247
+        "lat": 31.19067,
+        "lng": 34.805491
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -71339,8 +71339,8 @@
       "osmId": 540401655,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.147464,
-        "lng": 34.9848159
+        "lat": 31.147059,
+        "lng": 34.984166
       },
       "currentRoad": 25,
       "roadType": "interchange",
@@ -71434,8 +71434,8 @@
       "osmId": 2232278275,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.1357979,
-        "lng": 34.805978
+        "lat": 31.135129,
+        "lng": 34.806075
       },
       "currentRoad": 40,
       "roadType": "interchange",
@@ -71939,8 +71939,8 @@
       "osmId": 1868449372,
       "stopId": 0,
       "coordinates": {
-        "lat": 31.0367624,
-        "lng": 35.0927414
+        "lat": 31.0369209,
+        "lng": 35.0924435
       },
       "currentRoad": 25,
       "roadType": "interchange",
@@ -72314,8 +72314,8 @@
       "osmId": 4466910114,
       "stopId": 0,
       "coordinates": {
-        "lat": 30.9898896,
-        "lng": 34.911916
+        "lat": 30.990563,
+        "lng": 34.91174
       },
       "currentRoad": 204,
       "roadType": "urban_junction",

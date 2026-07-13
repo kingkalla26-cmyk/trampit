@@ -10,11 +10,12 @@ const https = require('https');
 const fs    = require('fs');
 const path  = require('path');
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_URL = 'https://overpass.kumi.systems/api/interpreter';
 const ISRAEL_BBOX  = '29.4,34.2,33.4,36.0'; // south,west,north,east
 const OUTPUT_FILE  = path.join(__dirname, 'trampitPointsDb.v3.json');
 const V2_FILE      = path.join(__dirname, 'trampitPointsDb.v2.json');
-const BUS_RADIUS_M = 350; // רדיוס לספירת עצירות אוטובוס
+const BUS_RADIUS_M  = 350; // רדיוס לספירת עצירות אוטובוס
+const SNAP_RADIUS_M = 100; // רדיוס להצמדת הנקודה לתחנה הפיזית הקרובה ביותר
 
 // ── שאילתת Overpass ────────────────────────────────────────────────────────
 // שלב 1: כל motorway_junction בישראל
@@ -186,6 +187,22 @@ async function main() {
     // בטיחות: safe אם יש עצירות (=יש תשתית המתנה), unknown אחרת
     const osmSafety = busCount > 0 ? 'safe' : 'unknown';
 
+    // הצמדה לתחנת האוטובוס הפיזית הקרובה ביותר — נקודת ההמתנה בפועל
+    // היא לרוב לצד הכביש ליד התחנה, לא גיאומטריית הצומת עצמה
+    let pointLat = node.lat, pointLng = node.lon;
+    if (nearbyStops.length > 0) {
+      let nearest = nearbyStops[0];
+      let nearestD = distM(node.lat, node.lon, nearest.lat, nearest.lon);
+      for (const bs of nearbyStops) {
+        const d = distM(node.lat, node.lon, bs.lat, bs.lon);
+        if (d < nearestD) { nearest = bs; nearestD = d; }
+      }
+      if (nearestD <= SNAP_RADIUS_M) {
+        pointLat = nearest.lat;
+        pointLng = nearest.lon;
+      }
+    }
+
     // מיזוג עם v2 — לפי קרבה (≤ 150m) או שם דומה
     const v2match = v2.points.find(p => {
       const d = distM(node.lat, node.lon, p.coordinates.lat, p.coordinates.lng);
@@ -216,7 +233,7 @@ async function main() {
       name,
       osmId,
       stopId:       v2match?.stopId ?? 0,
-      coordinates:  { lat: node.lat, lng: node.lon },
+      coordinates:  v2match?.coordinates ?? { lat: pointLat, lng: pointLng },
       currentRoad:  mainRoad,
       roadType,
       direction:    v2match?.direction ?? null,

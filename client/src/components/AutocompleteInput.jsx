@@ -124,7 +124,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
     <div ref={containerRef} style={s.wrap}>
       <div style={s.inputWrap}>
         <input
-          style={s.input}
+          style={{ ...s.input, ...(showLocationBtn ? s.inputWithBtn : {}) }}
           value={locLoading ? 'מאתר מיקום...' : value}
           placeholder={placeholder}
           onChange={e => { onChange(e.target.value); setOpen(true); }}
@@ -180,7 +180,7 @@ const s = {
     background: 'var(--card)',
     border: '1px solid var(--border)',
     borderRadius: 10,
-    padding: '12px 44px 12px 14px',
+    padding: '12px 14px',
     color: 'var(--foreground)',
     fontSize: 15,
     fontFamily: 'var(--font-body)',
@@ -188,6 +188,9 @@ const s = {
     outline: 'none',
     width: '100%',
   },
+  // בכיוון RTL הטקסט מתחיל מימין ומתמלא שמאלה — צריך רווח שמור בצד שמאל
+  // (איפה שיושב כפתור המיקום) כדי שטקסט ארוך (כתובת GPS) לא ייכנס מתחתיו
+  inputWithBtn: { padding: '12px 14px 12px 44px' },
   locBtn: {
     position: 'absolute',
     left: 10,

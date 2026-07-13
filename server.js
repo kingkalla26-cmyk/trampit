@@ -944,10 +944,26 @@ app.get('/api/route/plan', requireAuth, makeRateLimit('decision'), async (req, r
 
   matched.sort((a, b) => a._segIdx - b._segIdx);
 
+  // ── אשכולות: נקודות קרובות מדי זו לזו (<800מ') הן בעצם אותה עצירה בפועל —
+  // משאירים רק את הטובה מכל אשכול (הכי הרבה קווי אוטובוס) ────────────────────
+  const MIN_GAP_M = 800;
+  const deduped = [];
+  for (const cand of matched) {
+    const clusterIdx = deduped.findIndex(d =>
+      haversine(d.coordinates.lat, d.coordinates.lng, cand.coordinates.lat, cand.coordinates.lng) < MIN_GAP_M
+    );
+    if (clusterIdx === -1) deduped.push(cand);
+    else if (cand.activeBusLinesCount > deduped[clusterIdx].activeBusLinesCount) deduped[clusterIdx] = cand;
+  }
+
+  // רק נקודות שבאמת עוזרות — עדיפות למי שיש להן קווי אוטובוס פעילים
+  const withBus     = deduped.filter(p => p.activeBusLinesCount > 0);
+  const bestPoints  = (withBus.length > 0 ? withBus : deduped).slice(0, 4);
+
   res.json({
     destination:  { name: destName, lat: destLat, lng: destLng },
     routeDistKm,
-    exitPoints:   matched.slice(0, 7).map(({ _segIdx, ...j }) => j),
+    exitPoints:   bestPoints.map(({ _segIdx, ...j }) => j),
     totalFound:   matched.length,
   });
 });
@@ -1368,29 +1384,6 @@ app.get('/api/route/exits', requireAuth, makeRateLimit('decision'), async (req, 
   });
 });
 
-// ─── /api/nearestRoad — זיהוי כביש מ-GPS ────────────────────────────────────
-app.get('/api/nearestRoad', requireAuth, makeRateLimit('decision'), (req, res) => {
-  const lat = parseFloat(req.query.lat);
-  const lng = parseFloat(req.query.lng);
-  if (isNaN(lat) || isNaN(lng)) return res.status(400).json({ error: 'חסרים lat/lng' });
-
-  const SEARCH_RADIUS = 800; // מטר — בתוך הרדיוס הזה מחפשים נקודה קרובה
-  const points = loadTrampitDb().points
-    .filter(p => p.currentRoad > 0)
-    .map(p => ({ ...p, _dist: haversine(lat, lng, p.coordinates.lat, p.coordinates.lng) }))
-    .filter(p => p._dist < SEARCH_RADIUS)
-    .sort((a, b) => a._dist - b._dist);
-
-  if (points.length === 0) return res.json({ road: 0, pointName: null, distance: null });
-
-  const nearest = points[0];
-  res.json({
-    road:      nearest.currentRoad,
-    pointName: nearest.name,
-    distance:  Math.round(nearest._dist),
-  });
-});
-
 app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({ limit: '1kb' }), (req, res) => {
   const { userLat, userLng, destination, driverNextRoad } = req.body || {};
 
@@ -1429,22 +1422,7 @@ app.post('/api/decision', requireAuth, makeRateLimit('decision'), express.json({
     relevant.map(p => p.id)
   );
 
-  // מחזיר גם את הנקודות הקרובות לתצוגה בUI
-  const nearbyPoints = allPoints
-    .map(p => ({ ...p, _dist: haversine(userLat, userLng, p.coordinates.lat, p.coordinates.lng) }))
-    .filter(p => p._dist < 3000)
-    .sort((a, b) => a._dist - b._dist)
-    .slice(0, 4)
-    .map(p => ({
-      id:          p.id,
-      name:        p.name,
-      distance:    Math.round(p._dist),
-      currentRoad: p.currentRoad,
-      activeBusLinesCount: p.activeBusLinesCount,
-      safetyRating: p.safetyRating,
-    }));
-
-  res.json({ ...result, nearbyPoints });
+  res.json(result);
 });
 
 // ─── /api/transit — נתוני תחבורה ציבורית מהסדנה (GTFS + SIRI) ───────────────
@@ -1464,9 +1442,35 @@ function pruneTransitCache() {
   }
 }
 
-// עיצוב datetime לפי ה-API
-function toAPITime(d) {
-  return d.toISOString().split('.')[0] + '+00:00';
+// עיצוב טווח datetime לפי ה-API
+// gtfs_rides.start_time/end_time מעוגנים תמיד לתאריך קבוע 2023-01-01 (שעון חורף, בלי שעון קיץ) —
+// הם מייצגים אך ורק את שעת-היום בישראל, לא תאריך אמיתי. לכן צריך "לתרגם" את הזמן הנוכחי
+// לשעת-היום בישראל ואז להטמיע אותה על התאריך העוגן, בהיסט הקבוע UTC+2 (חורף, ללא DST).
+// מחשב את שני הקצוות יחד (לא בנפרד) כדי לשמר נכון מעבר חצות אמיתי בין from ל-to.
+function apiTimeRange(fromDate, toDate) {
+  const hmsFmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem', hour12: false,
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+  const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }); // 'YYYY-MM-DD'
+  const baseDayStr = dayFmt.format(fromDate);
+  const pad = n => String(n).padStart(2, '0');
+
+  function encode(d) {
+    const parts = hmsFmt.formatToParts(d);
+    const get = t => parts.find(p => p.type === t).value;
+    let h = parseInt(get('hour'), 10) - 2; // היסט קבוע לשעון חורף
+    const dayOffsetDays = Math.round(
+      (Date.parse(dayFmt.format(d) + 'T00:00:00Z') - Date.parse(baseDayStr + 'T00:00:00Z')) / 86400000
+    );
+    let anchorDay = 1 + dayOffsetDays; // baseDayStr → 2023-01-01 (יום 1)
+    if (h < 0)  { h += 24; anchorDay -= 1; }
+    if (h >= 24) { h -= 24; anchorDay += 1; }
+    const dateStr = new Date(Date.UTC(2023, 0, anchorDay)).toISOString().split('T')[0];
+    return `${dateStr}T${pad(h)}:${get('minute')}:${get('second')}+00:00`;
+  }
+
+  return { from: encode(fromDate), to: encode(toDate) };
 }
 
 // המרת UTC ל-HH:MM ישראל
@@ -1577,7 +1581,10 @@ app.get('/api/transit', requireAuth, makeRateLimit('transit'), async (req, res) 
           return searchNames.some(sn =>
             isCityEndpoint(name, sn) ||
             (sn === 'תל אביב' && isCityEndpoint(name, 'תל אביב יפו'))
-          ) && isCityEndpoint(name, destTrim);
+          ) && (
+            isCityEndpoint(name, destTrim) ||
+            (destTrim === 'תל אביב' && isCityEndpoint(name, 'תל אביב יפו'))
+          );
         });
 
         const candidates = intercity.length > 0 ? intercity : destRoutes;
@@ -1630,10 +1637,12 @@ app.get('/api/transit', requireAuth, makeRateLimit('transit'), async (req, res) 
     }
 
     // ── ב. שעות יציאה — תמיד רענן, פרלל לכל הקווים ───────────────────────
+    // הערה: שליחת start_time_from וגם start_time_to יחד ל-API גורמת לשאילתה
+    // איטית מאוד בצד השרת שלהם (נצפו 8-10+ שניות, לפעמים timeout) — לכן שולחים
+    // רק start_time_from + מיון עולה, ומסננים בצד שלנו כל מה שמעבר לחלון הזמן.
     const nowMs   = Date.now();
-    const timeFrom = toAPITime(new Date(nowMs));
-    const timeTo   = toAPITime(new Date(nowMs + 5 * 3600 * 1000)); // +5 שעות
-    const depOpts  = { signal: AbortSignal.timeout(8000) };
+    const { from: timeFrom, to: timeTo } = apiTimeRange(new Date(nowMs), new Date(nowMs + 5 * 3600 * 1000)); // +5 שעות
+    const depOpts  = { signal: AbortSignal.timeout(10000) };
 
     const departuresByIdx = await Promise.all(
       routeObjects.map(async r => {
@@ -1655,10 +1664,11 @@ app.get('/api/transit', requireAuth, makeRateLimit('transit'), async (req, res) 
           const url = `${BASE}/gtfs_rides/list?${routeFilter}` +
             dirFilter +
             `&start_time_from=${encodeURIComponent(timeFrom)}` +
-            `&start_time_to=${encodeURIComponent(timeTo)}` +
-            `&order_by=start_time asc&limit=8`;
+            `&order_by=${encodeURIComponent('start_time asc')}&limit=20`;
           const data = await fetch(url, depOpts).then(res => res.json()).catch(() => []);
           return (Array.isArray(data) ? data : [])
+            .filter(ride => ride.start_time && ride.start_time <= timeTo)
+            .slice(0, 8)
             .map(ride => toIsraelTime(ride.start_time))
             .filter(Boolean);
         } catch { return []; }
