@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trampit — Waze Inspired</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #f0f4ff;
+    color: #0d1b4b;
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: #0f3cc9;
+    padding: 0 20px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: #ffcf00;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .logo span { color: #ffcf00; }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    background: #0c30a8;
+    gap: 2px;
+    padding: 0 12px;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 11px 0;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+  }
+  .nav-btn.active {
+    color: #ffcf00;
+    border-bottom-color: #ffcf00;
+  }
+
+  /* ── Main ── */
+  .main { padding: 16px 14px 100px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── Search banner ── */
+  .search-banner {
+    background: #0f3cc9;
+    border-radius: 20px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .banner-icon { font-size: 28px; }
+  .banner-text { color: #fff; }
+  .banner-title { font-size: 16px; font-weight: 800; }
+  .banner-sub   { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+  /* ── Card ── */
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(15,60,201,0.08);
+    border: 1.5px solid #dce5ff;
+  }
+  .card-head {
+    padding: 13px 18px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f0f4ff;
+  }
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .step-circle.on  { background: #ffcf00; color: #0d1b4b; }
+  .step-circle.off { background: #f0f4ff; color: #8ea3d9; }
+  .card-title { font-size: 15px; font-weight: 800; color: #0d1b4b; }
+  .card-sub   { font-size: 12px; color: #6b7fb8; margin-top: 1px; }
+  .card-body  { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .input-wrap { display: flex; flex-direction: column; gap: 5px; }
+  .input-lbl { font-size: 11px; font-weight: 800; color: #8ea3d9; display: flex; align-items: center; gap: 5px; }
+  .dot-b { width: 8px; height: 8px; border-radius: 50%; background: #0f3cc9; }
+  .dot-g { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+
+  .waze-input {
+    background: #f0f4ff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 10px 13px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    color: #0d1b4b;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .waze-input:focus { border-color: #0f3cc9; background: #fff; }
+  .waze-input::placeholder { color: #aab8e0; }
+
+  /* ── Big button ── */
+  .go-btn {
+    background: #ffcf00;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 20px;
+    color: #0d1b4b;
+    font-size: 16px;
+    font-weight: 900;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 16px rgba(255,207,0,0.4);
+  }
+  .go-btn .go-icon {
+    width: 34px;
+    height: 34px;
+    background: #0f3cc9;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffcf00;
+    font-size: 16px;
+  }
+
+  /* ── Section label ── */
+  .sec-lbl { font-size: 13px; font-weight: 800; color: #6b7fb8; padding: 0 4px; }
+
+  /* ── Route cards ── */
+  .route-card {
+    background: #fff;
+    border: 2px solid #dce5ff;
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(15,60,201,0.05);
+  }
+  .route-card.best {
+    border-color: #0f3cc9;
+    box-shadow: 0 4px 20px rgba(15,60,201,0.12);
+  }
+  .r-meta { display: flex; align-items: center; gap: 8px; }
+  .r-time { font-size: 24px; font-weight: 900; color: #0d1b4b; }
+  .r-sep  { color: #c7d3f0; }
+  .r-dist { font-size: 13px; font-weight: 600; color: #6b7fb8; }
+  .r-fast {
+    margin-right: auto;
+    background: #0f3cc9;
+    color: #ffcf00;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+  .r-summary { font-size: 13px; font-weight: 600; color: #3d5299; }
+  .r-roads { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .r-road {
+    background: #f0f4ff;
+    border: 1.5px solid #c7d3f0;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #0d1b4b;
+  }
+  .r-road.toll { background: #fff8e1; border-color: #ffd600; color: #a16207; }
+  .r-arr { color: #c7d3f0; font-size: 11px; }
+
+  /* ── Results header ── */
+  .res-top {
+    background: #fff;
+    border: 2px solid #dce5ff;
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 1px 6px rgba(15,60,201,0.05);
+  }
+  .res-title { font-size: 16px; font-weight: 900; color: #0d1b4b; }
+  .res-sub   { font-size: 12px; color: #6b7fb8; margin-top: 2px; }
+  .track-btn {
+    flex-shrink: 0;
+    background: #f0f4ff;
+    border: 2px solid #c7d3f0;
+    border-radius: 12px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f3cc9;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+  }
+
+  /* ── Exit cards ── */
+  .exit-card {
+    background: #fff;
+    border: 2px solid #dce5ff;
+    border-radius: 18px;
+    padding: 15px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 6px rgba(15,60,201,0.05);
+    cursor: pointer;
+  }
+  .exit-card.gw { border-color: #10b981; box-shadow: 0 2px 12px rgba(16,185,129,0.1); }
+  .ex-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ex-name { font-size: 17px; font-weight: 900; color: #0d1b4b; }
+  .gw-tag {
+    font-size: 11px;
+    font-weight: 800;
+    background: #d1fae5;
+    color: #065f46;
+    border: 1.5px solid #6ee7b7;
+    border-radius: 20px;
+    padding: 2px 9px;
+  }
+
+  .timeline { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .tl-node {
+    background: #f0f4ff;
+    border: 1.5px solid #c7d3f0;
+    border-radius: 10px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #3d5299;
+  }
+  .tl-dest { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+  .tl-sep  { color: #c7d3f0; font-size: 11px; }
+
+  .bus-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .bus-chip {
+    font-size: 12px; font-weight: 800;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 2px 9px;
+  }
+  .bus-chip.rel { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    left: 16px;
+    background: #ffcf00;
+    color: #0d1b4b;
+    border: none;
+    border-radius: 20px;
+    padding: 13px 20px;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,207,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🛣</div>
+    טרמפ<span>יט</span>
+  </div>
+  <div style="font-size:11px; font-weight:800; background:rgba(255,207,0,0.2); color:#ffcf00; border:1.5px solid rgba(255,207,0,0.4); padding:3px 10px; border-radius:20px;">BETA</div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active">🔍 חיפוש</button>
+  <button class="nav-btn">🗺 מפה</button>
+  <button class="nav-btn">🚗 בדרך</button>
+</nav>
+
+<div class="main">
+
+  <div class="search-banner">
+    <div class="banner-icon">👋</div>
+    <div class="banner-text">
+      <div class="banner-title">לאן נוסעים היום?</div>
+      <div class="banner-sub">מלא פרטים ונמצא לך צמתים</div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="step-circle on">1</div>
+      <div>
+        <div class="card-title">מאיפה לאיפה?</div>
+        <div class="card-sub">נקודת מוצא ויעד סופי</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="input-row">
+        <div class="input-wrap">
+          <div class="input-lbl"><span class="dot-b"></span>מוצא</div>
+          <input class="waze-input" value="צרעה" readonly>
+        </div>
+        <div class="input-wrap">
+          <div class="input-lbl"><span class="dot-g"></span>יעד</div>
+          <input class="waze-input" value="אשקלון" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="step-circle off">2</div>
+      <div>
+        <div class="card-title">לאן נוסע הרכב?</div>
+        <div class="card-sub">יעד הנהג</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <input class="waze-input" value="אשקלון" readonly>
+    </div>
+  </div>
+
+  <!-- Go button -->
+  <button class="go-btn">
+    <div class="go-icon">✦</div>
+    <span>נתח מסלול — מצא צמתים</span>
+    <span style="font-size:18px;">←</span>
+  </button>
+
+  <!-- Route options -->
+  <div class="sec-lbl">באיזה מסלול הרכב נוסע?</div>
+
+  <div class="route-card best">
+    <div class="r-meta">
+      <span class="r-time">48 דק'</span>
+      <span class="r-sep">·</span>
+      <span class="r-dist">62 ק"מ</span>
+      <span class="r-fast">הכי מהיר</span>
+    </div>
+    <div class="r-summary">כביש 38 → כביש 35 → כביש 34</div>
+    <div class="r-roads">
+      <span class="r-road">38</span>
+      <span class="r-arr">→</span>
+      <span class="r-road">35</span>
+      <span class="r-arr">→</span>
+      <span class="r-road">34</span>
+    </div>
+  </div>
+
+  <div class="route-card">
+    <div class="r-meta">
+      <span class="r-time">54 דק'</span>
+      <span class="r-sep">·</span>
+      <span class="r-dist">71 ק"מ</span>
+      <span style="margin-right:auto; background:#fff8e1; color:#a16207; border:1.5px solid #ffd600; font-size:11px; font-weight:800; padding:2px 9px; border-radius:20px;">כולל כביש 6</span>
+    </div>
+    <div class="r-summary">כביש 6 → כביש 35</div>
+    <div class="r-roads">
+      <span class="r-road toll">6</span>
+      <span class="r-arr">→</span>
+      <span class="r-road">35</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="sec-lbl" style="margin-top:4px;">נקודות יציאה מומלצות</div>
+
+  <div class="res-top">
+    <div>
+      <div class="res-title">צרעה ← אשקלון</div>
+      <div class="res-sub">הרכב נוסע לאשקלון</div>
+    </div>
+    <button class="track-btn">📍 עקוב</button>
+  </div>
+
+  <div class="exit-card gw">
+    <div class="ex-top">
+      <div class="ex-name">מסעף צרעה</div>
+      <span class="gw-tag">⭐ שער ליעדך</span>
+    </div>
+    <div class="timeline">
+      <span class="tl-node">🚗 טרמפ</span>
+      <span class="tl-sep">→</span>
+      <span class="tl-node">🚌 840</span>
+      <span class="tl-sep">→</span>
+      <span class="tl-node tl-dest">🟢 אשקלון</span>
+    </div>
+    <div class="bus-row">
+      <span class="bus-chip rel">840 ✓</span>
+      <span class="bus-chip rel">446 ✓</span>
+      <span class="bus-chip">32</span>
+    </div>
+  </div>
+
+  <div class="exit-card">
+    <div class="ex-top">
+      <div class="ex-name">מחלף גבעת שרת</div>
+    </div>
+    <div class="timeline">
+      <span class="tl-node">🚗 טרמפ</span>
+      <span class="tl-sep">→</span>
+      <span class="tl-node">🚌 446</span>
+      <span class="tl-sep">→</span>
+      <span class="tl-node tl-dest">🟢 אשקלון</span>
+    </div>
+    <div class="bus-row">
+      <span class="bus-chip rel">446 ✓</span>
+      <span class="bus-chip">12</span>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab">📍 דווח נקודת טרמפ</button>
+
+</body>
+</html>

@@ -1,4 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useProximityAlert } from '../hooks/useProximityAlert.js';
+import {
+  IconCar, IconBus, IconTrain, IconPin, IconStar,
+  IconClock, IconThumbUp, IconThumbDown,
+  IconTarget, IconStopCircle, IconFlag,
+  IconChevronDown, IconChevronUp, IconRefresh,
+} from '../icons.jsx';
 
 function israelNow() {
   return new Date().toLocaleTimeString('he-IL', {
@@ -7,9 +14,9 @@ function israelNow() {
 }
 
 function minutesUntil(timeStr) {
-  const now  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
   const [h, m] = timeStr.split(':').map(Number);
-  const dep  = new Date(now);
+  const dep = new Date(now);
   dep.setHours(h, m, 0, 0);
   if (dep < now) return null;
   const diff = Math.round((dep - now) / 60000);
@@ -18,13 +25,83 @@ function minutesUntil(timeStr) {
   return `${Math.floor(diff / 60)}:${String(diff % 60).padStart(2, '0')} ש'`;
 }
 
-export default function Results({ data, origin, destination, carDest, onReset }) {
-  const [transit, setTransit]               = useState(null);
-  const [transitLoading, setTransitLoading] = useState(false);
-  const [transitOpen, setTransitOpen]       = useState(true);
-  const [optTransits, setOptTransits]       = useState({});
-  const [clock, setClock]                   = useState(israelNow());
+function isRouteTowardDest(route, destination) {
+  if (!route.to || !destination) return false;
+  const d = destination.toLowerCase().trim();
+  const t = route.to.toLowerCase().trim();
+  return t.includes(d) || d.includes(t);
+}
+
+// ── כפתורי הצבעה ────────────────────────────────────────────────────────────
+function VoteButtons({ voteKey }) {
+  const [counts,  setCounts]  = useState(null);
+  const [myVote,  setMyVote]  = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/vote?keys=${encodeURIComponent(voteKey)}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : {})
+      .then(d => d[voteKey] && setCounts(d[voteKey]))
+      .catch(() => {});
+  }, [voteKey]);
+
+  async function vote(v) {
+    if (myVote || loading) return;
+    setLoading(true);
+    try {
+      const r = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ key: voteKey, vote: v }),
+      });
+      const d = await r.json();
+      if (r.ok || r.status === 409) {
+        setCounts({ up: d.up, down: d.down });
+        setMyVote(v);
+      }
+    } catch {}
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div style={v.wrap}>
+      <button
+        style={{ ...v.btn, ...(myVote === 'up' ? v.btnUp : {}) }}
+        onClick={() => vote('up')}
+        disabled={!!myVote || loading}
+        title="נקודה טובה"
+      >
+        <IconThumbUp size={14} />
+        {counts?.up ?? ''}
+      </button>
+      <button
+        style={{ ...v.btn, ...(myVote === 'down' ? v.btnDown : {}) }}
+        onClick={() => vote('down')}
+        disabled={!!myVote || loading}
+        title="נקודה גרועה"
+      >
+        <IconThumbDown size={14} />
+        {counts?.down ?? ''}
+      </button>
+      {!myVote && <span style={v.hint}>דרג נקודה זו</span>}
+      {myVote  && <span style={{ ...v.hint, color: 'var(--accent)' }}>תודה!</span>}
+    </div>
+  );
+}
+
+export default function Results({ data, origin, destination, carDest, onReset, routeDistKm, totalOnRoute }) {
+  const [transit,       setTransit]       = useState(null);
+  const [transitLoad,   setTransitLoad]   = useState(false);
+  const [transitOpen,   setTransitOpen]   = useState(true);
+  const [optTransits,   setOptTransits]   = useState({});
+  const [openBusPanels, setOpenBusPanels] = useState({});
+  const [clock,         setClock]         = useState(israelNow());
   const clockRef = useRef(null);
+
+  const exitPoints = data?.options || [];
+  const { isTracking, alert, geoError, startTracking, stopTracking, dismissAlert, distTo } =
+    useProximityAlert(exitPoints);
 
   useEffect(() => {
     clockRef.current = setInterval(() => setClock(israelNow()), 30000);
@@ -33,297 +110,543 @@ export default function Results({ data, origin, destination, carDest, onReset })
 
   useEffect(() => {
     if (!destination) return;
-    setTransitLoading(true);
-    fetch(`/api/transit?stop=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`, {
-      credentials: 'include',
-    })
+    setTransitLoad(true);
+    fetch(`/api/transit?stop=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => setTransit(d))
       .catch(() => setTransit(null))
-      .finally(() => setTransitLoading(false));
+      .finally(() => setTransitLoad(false));
   }, [origin, destination]);
 
   useEffect(() => {
     if (!destination || !data?.options?.length) return;
-    const locations = [...new Set((data.options || []).map(o => o.location).filter(Boolean))];
-    locations.forEach(loc => {
-      fetch(`/api/transit?stop=${encodeURIComponent(loc)}&destination=${encodeURIComponent(destination)}`, {
-        credentials: 'include',
-      })
+    const locs = [...new Set(data.options.map(o => o.location).filter(Boolean))];
+    locs.forEach(loc => {
+      const opt = data.options.find(o => o.location === loc);
+      const coordsParam = opt?.coordinates
+        ? `&lat=${opt.coordinates.lat}&lng=${opt.coordinates.lng}`
+        : '';
+      fetch(`/api/transit?stop=${encodeURIComponent(loc)}${coordsParam}`, { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
-        .then(d => {
-          if (d && (d.routes?.length > 0 || d.stops?.length > 0)) {
-            setOptTransits(prev => ({ ...prev, [loc]: d }));
-          }
-        })
-        .catch(() => {});
+        .then(d => setOptTransits(p => ({ ...p, [loc]: d || {} })))
+        .catch(() => setOptTransits(p => ({ ...p, [loc]: {} })));
     });
   }, [destination, data]);
 
   if (!data) return null;
 
-  const typeConfig = {
-    fast:  { label: '⚡ הכי מהיר',     color: '#d97706', borderColor: '#fbbf24' },
-    cheap: { label: '₪ הכי זול',       color: '#059669', borderColor: '#10b981' },
-    tramp: { label: '🤙 הכי קל לטרמפ', color: '#7c3aed', borderColor: '#a78bfa' },
-  };
+  function toggleBus(loc) {
+    setOpenBusPanels(p => ({ ...p, [loc]: !p[loc] }));
+  }
 
   return (
     <div style={s.container}>
-      <div style={s.card}>
-        <div style={s.header}>
-          <div>
-            <div style={s.title}>{origin} → {destination}</div>
-            <div style={s.sub}>הרכב נוסע ל{carDest} — בחר נקודת יציאה:</div>
+
+      {/* ── התראת קרבה ── */}
+      {alert && (
+        <div style={al.overlay}>
+          <div style={al.box}>
+            <div style={al.pulse} />
+            <div style={al.iconWrap}>
+              <IconPin size={32} style={{ color: 'var(--destructive)' }} />
+            </div>
+            <div style={al.title}>התכונן לירידה!</div>
+            <div style={al.loc}>{alert.location}</div>
+            <div style={al.dist}>נמצאת במרחק {alert.distKm} ק"מ מנקודת הירידה</div>
+            <button style={al.btn} onClick={dismissAlert}>הבנתי</button>
           </div>
-          <span style={s.aiBadge}>✦ AI</span>
-          <button style={s.resetBtn} onClick={onReset}>חיפוש חדש</button>
         </div>
+      )}
 
-        {/* Options */}
-        <div style={s.grid}>
-          {(data.options || []).map((opt, i) => {
-            const cfg       = typeConfig[opt.type] || typeConfig.fast;
-            const jrRoutes  = optTransits[opt.location]?.routes || [];
-            const firstLine = jrRoutes[0]?.line;
+      {/* ── כותרת ── */}
+      <div style={s.resultsHeader}>
+        <div>
+          <div style={s.title}>{origin} ← {destination}</div>
+          <div style={s.sub}>
+            <IconCar size={13} style={{ flexShrink: 0 }} />
+            הרכב נוסע ל{carDest}
+          </div>
+        </div>
+        <div style={s.headerActions}>
+          <button
+            style={{ ...s.actionBtn, ...(isTracking ? s.actionBtnStop : {}) }}
+            onClick={isTracking ? stopTracking : startTracking}
+          >
+            {isTracking
+              ? <><IconStopCircle size={14} /> עצור מעקב</>
+              : <><IconTarget size={14} /> עקוב</>
+            }
+          </button>
+          <button style={s.actionBtn} onClick={onReset}>
+            <IconRefresh size={14} />
+            חיפוש חדש
+          </button>
+        </div>
+      </div>
 
-            return (
-              <div key={i} style={{
-                ...s.optCard,
-                ...(opt.best ? s.optBest : {}),
-                borderRight: `4px solid ${cfg.borderColor}`,
-              }}>
-                <span style={{ ...s.badge, background: cfg.color + '18', color: cfg.color, border: `1px solid ${cfg.color}33` }}>
-                  {cfg.label}
-                </span>
+      {/* שגיאת מיקום */}
+      {geoError && <div style={s.geoErr}>{geoError}</div>}
 
-                <div style={s.location}>{opt.location}</div>
-                <div style={s.distance}>{opt.exitDistance} מהמוצא</div>
+      {/* ── כרטיסי יציאה ── */}
+      <div style={s.sectionLabel}>נקודות יציאה מומלצות</div>
 
-                {/* Timeline */}
-                <div style={s.timeline}>
-                  <span style={s.tlStep}>🚗 טרמפ</span>
-                  <span style={s.tlArrow}>→</span>
-                  <span style={s.tlStep}>{firstLine ? `🚌 ${firstLine}` : '🚌 אוטובוס'}</span>
-                  <span style={s.tlArrow}>→</span>
-                  <span style={{ ...s.tlStep, ...s.tlDest }}>🟢 {destination}</span>
+      <div style={s.exitList}>
+        {(data.options || []).map((opt, i) => {
+          const transitData = optTransits[opt.location];
+          const routes      = transitData?.routes || [];
+          const loaded      = transitData !== undefined;
+          const hasRoutes   = routes.length > 0;
+          const firstLine   = routes[0]?.line;
+          const kmAway      = isTracking ? distTo(opt) : null;
+          const isOpen      = openBusPanels[opt.location];
+
+          return (
+            <div
+              key={i}
+              style={{ ...s.exitCard, ...(opt.isGatewayMatch ? s.exitCardGateway : {}) }}
+            >
+              {/* שם + תגים */}
+              <div style={s.exitTop}>
+                <div style={s.exitNameRow}>
+                  <IconPin
+                    size={18}
+                    style={{ color: opt.isGatewayMatch ? 'var(--accent)' : 'var(--muted-foreground)', flexShrink: 0 }}
+                  />
+                  <span style={s.exitName}>{opt.location}</span>
+                  {opt.isGatewayMatch && (
+                    <span style={s.gatewayBadge}>
+                      <IconStar size={11} />
+                      שער ליעדך
+                    </span>
+                  )}
                 </div>
+                {kmAway !== null && (
+                  <span style={{ ...s.distBadge, ...(kmAway <= 1.5 ? s.distBadgeClose : {}) }}>
+                    {kmAway < 1 ? `${Math.round(kmAway * 1000)} מ'` : `${Math.round(kmAway * 10) / 10} ק"מ`}
+                  </span>
+                )}
+              </div>
 
-                <div style={s.stats}>
-                  <div style={s.stat}><div style={s.statVal}>{opt.time}</div><div style={s.statLbl}>זמן</div></div>
-                  <div style={s.stat}><div style={s.statVal}>{opt.cost}</div><div style={s.statLbl}>עלות</div></div>
-                  <div style={s.stat}><div style={s.statVal}>{opt.trampScore}/10</div><div style={s.statLbl}>טרמפ</div></div>
+              {/* ציר זמן */}
+              <div style={s.journey}>
+                <div style={s.journeyStep}>
+                  <IconCar size={13} />
+                  טרמפ
                 </div>
+                <span style={s.journeyArrow}>→</span>
+                <div style={s.journeyStep}>
+                  <IconBus size={13} />
+                  {firstLine ? `קו ${firstLine}` : 'אוטובוס'}
+                </div>
+                <span style={s.journeyArrow}>→</span>
+                <div style={{ ...s.journeyStep, ...s.journeyDest }}>
+                  <IconFlag size={13} />
+                  {destination}
+                </div>
+              </div>
 
-                {/* קווים אמיתיים מהצומת ליעד */}
-                {jrRoutes.length > 0 && (
-                  <div style={s.jrWrap}>
-                    <div style={s.jrTitle}>🚌 קווים מהצומת ל{destination}:</div>
-                    {jrRoutes.slice(0, 3).map((r, j) => (
-                      <div key={j} style={s.jrRow}>
-                        <span style={s.jrLine}>{r.line}</span>
-                        <div style={s.jrDeps}>
-                          {r.departures.slice(0, 3).map(t => {
+              {/* badges — קווים */}
+              <div style={s.linesRow}>
+                {!loaded && <span style={s.linesLabel}>טוען...</span>}
+                {loaded && !hasRoutes && <span style={s.linesNone}>אין קווים</span>}
+                {loaded && routes.map((r, j) => {
+                  const relevant = isRouteTowardDest(r, destination);
+                  return (
+                    <span
+                      key={j}
+                      style={{ ...s.linePill, ...(relevant ? s.linePillMatch : {}) }}
+                      title={`${r.from} → ${r.to}`}
+                    >
+                      {r.line}{relevant ? ' ✓' : ''}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* כפתור לוח זמנים */}
+              {loaded && hasRoutes && (
+                <button style={s.scheduleBtn} onClick={() => toggleBus(opt.location)}>
+                  <IconClock size={14} />
+                  לוח זמנים
+                  {isOpen ? <IconChevronUp size={13} /> : <IconChevronDown size={13} />}
+                </button>
+              )}
+
+              {/* פאנל קווים */}
+              {isOpen && (
+                <div style={s.busPanel}>
+                  {routes.map((r, j) => {
+                    const relevant = isRouteTowardDest(r, destination);
+                    const isTrain  = r.type === 'רכבת';
+                    return (
+                      <div key={j} style={{ ...s.busRow, ...(relevant ? s.busRowMatch : {}) }}>
+                        <div style={s.busRowTop}>
+                          <span style={{ ...s.lineNum, ...(relevant ? s.lineNumMatch : {}), ...(isTrain ? s.lineNumTrain : {}) }}>
+                            {r.line}
+                          </span>
+                          <div style={s.busInfo}>
+                            <div style={{ ...s.busDest, ...(relevant ? s.busDestMatch : {}) }}>
+                              {r.from} → {r.to}
+                              {relevant && <span style={s.matchTag}>לכיוון שלך</span>}
+                            </div>
+                            {r.company && <div style={s.busCompany}>{r.company}</div>}
+                          </div>
+                        </div>
+                        <div style={s.deps}>
+                          {r.departures.slice(0, 4).map(t => {
                             const min = minutesUntil(t);
                             return (
-                              <span key={t} style={s.jrChip}>
+                              <span key={t} style={{ ...s.depChip, ...(relevant ? s.depChipMatch : {}) }}>
                                 {t}{min ? ` · ${min}` : ''}
                               </span>
                             );
                           })}
-                          {r.departures.length === 0 && <span style={s.jrNone}>אין נסיעות ב-5 ש'</span>}
+                          {r.departures.length === 0 && <span style={s.noDep}>אין נסיעות בקרוב</span>}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Real Transit Data — Accordion */}
-        <div style={s.section}>
-          <button style={s.accordionBtn} onClick={() => setTransitOpen(o => !o)}>
-            <div>
-              <div style={s.accordionTitle}>🚌 תחבורה ציבורית אמיתית</div>
-              <div style={s.accordionSub}>מקור: ממשל פתוח ישראל + עמותת הסדנה</div>
-            </div>
-            <div style={s.accordionRight}>
-              <div style={s.clockBadge}>🕐 {clock}</div>
-              <span style={s.accordionArrow}>{transitOpen ? '▲' : '▼'}</span>
-            </div>
-          </button>
-
-          {transitOpen && (
-            <div style={s.accordionContent}>
-              {transitLoading && <div style={s.transitLoading}>טוען נתוני תחבורה...</div>}
-
-              {transit && !transitLoading && (
-                <>
-                  {(transit.routes || []).length > 0 && (
-                    <div style={s.routesWrap}>
-                      {transit.routes.map((r, i) => {
-                        const isTrain = r.type === 'רכבת';
-                        const deps    = (r.departures || []).slice(0, 5);
-                        return (
-                          <div key={i} style={s.routeCard}>
-                            <div style={s.routeTop}>
-                              <div style={{ ...s.lineNum, background: isTrain ? 'rgba(217,119,6,0.1)' : 'rgba(37,99,235,0.08)', color: isTrain ? '#b45309' : '#2563eb', border: `1px solid ${isTrain ? 'rgba(217,119,6,0.25)' : 'rgba(37,99,235,0.2)'}` }}>
-                                {isTrain ? '🚆' : '🚌'} {r.line}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={s.routeName}>{r.from} → {r.to}</div>
-                                {r.company && <div style={s.routeCompany}>{r.company}</div>}
-                              </div>
-                              <div style={s.routeType}>{r.type}</div>
-                            </div>
-                            {deps.length > 0 && (
-                              <div style={s.depsRow}>
-                                {deps.map((t, j) => {
-                                  const min = minutesUntil(t);
-                                  return (
-                                    <div key={j} style={{ ...s.depChip, ...(j === 0 ? s.depChipFirst : {}) }}>
-                                      <span style={s.depTime}>{t}</span>
-                                      {min && <span style={s.depMin}>{min}</span>}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {deps.length === 0 && (
-                              <div style={s.noDepMsg}>אין נסיעות ב-5 השעות הקרובות</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {(transit.stops || []).length > 0 && (
-                    <div style={s.stopsWrap}>
-                      <div style={s.stopsHeader}>תחנות קרובות ל{origin}:</div>
-                      <div style={s.stopsList}>
-                        {transit.stops.slice(0, 4).map((st, i) => (
-                          <div key={i} style={s.stopItem}>
-                            <span style={s.stopDot}>●</span>
-                            <span style={s.stopName}>{st.name}</span>
-                            {st.city && <span style={s.stopCity}>{st.city}</span>}
-                            {st.code && <span style={s.stopCode}>#{st.code}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {(transit.routes || []).length === 0 && (transit.stops || []).length === 0 && (
-                    <div style={s.noTransit}>לא נמצאו קווי תחבורה ציבורית ישירים למסלול זה</div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Hotspots */}
-        {(data.hotspots || []).length > 0 && (
-          <div style={s.section}>
-            <div style={s.sectionTitle}>🔥 נקודות טרמפ חמות ליד המסלול</div>
-            <div style={s.sectionSub}>מבוסס על דיווחי קהילה ונתוני שעות</div>
-            {data.hotspots.map((hs, i) => (
-              <div key={i} style={s.hotspot}>
-                <div style={s.rank}>{i + 1}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={s.hsName}>{hs.name}</div>
-                  <div style={s.hsDetail}>{hs.direction} · פעיל {hs.bestTime}</div>
+                    );
+                  })}
                 </div>
-                <div style={s.heat}>{'🔥'.repeat(hs.heat)}</div>
-              </div>
-            ))}
+              )}
+
+              {/* הצבעות */}
+              <VoteButtons voteKey={`exit:${opt.location}`} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── תחבורה ציבורית ממוצא ── */}
+      <div style={s.transitSection}>
+        <button style={s.accordionBtn} onClick={() => setTransitOpen(o => !o)}>
+          <div>
+            <div style={s.accordionTitle}>
+              <IconBus size={15} style={{ flexShrink: 0 }} />
+              תחבורה ציבורית אמיתית
+            </div>
+            <div style={s.accordionSub}>מקור: ממשל פתוח ישראל + עמותת הסדנה</div>
+          </div>
+          <div style={s.accordionRight}>
+            <div style={s.clockBadge}>
+              <IconClock size={13} />
+              {clock}
+            </div>
+            {transitOpen ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+          </div>
+        </button>
+
+        {transitOpen && (
+          <div style={s.accordionContent}>
+            {transitLoad && <div style={s.loading}>טוען נתוני תחבורה...</div>}
+            {transit && !transitLoad && (
+              <>
+                {(transit.routes || []).map((r, i) => {
+                  const isTrain = r.type === 'רכבת';
+                  const deps    = (r.departures || []).slice(0, 5);
+                  return (
+                    <div key={i} style={s.routeCard}>
+                      <div style={s.routeTop}>
+                        <div style={{ ...s.lineNum, ...(isTrain ? s.lineNumTrain : {}) }}>
+                          {isTrain ? <IconTrain size={13} /> : <IconBus size={13} />}
+                          {r.line}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={s.routeName}>{r.from} → {r.to}</div>
+                          {r.company && <div style={s.busCompany}>{r.company}</div>}
+                        </div>
+                      </div>
+                      {deps.length > 0 && (
+                        <div style={s.depsRow}>
+                          {deps.map((t, j) => {
+                            const min = minutesUntil(t);
+                            return (
+                              <div key={j} style={{ ...s.depCard, ...(j === 0 ? s.depCardFirst : {}) }}>
+                                <span style={s.depTime}>{t}</span>
+                                {min && <span style={s.depMin}>{min}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {deps.length === 0 && <div style={s.noDep}>אין נסיעות ב-5 השעות הקרובות</div>}
+                    </div>
+                  );
+                })}
+                {(transit.routes || []).length === 0 && (
+                  <div style={s.loading}>לא נמצאו קווי תחבורה ציבורית ישירים למסלול זה</div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
+
     </div>
   );
 }
 
+// ── Styles ───────────────────────────────────────────────────────────────────
+
 const s = {
-  container: { padding: '0 16px 80px' },
-  card:      { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-  header:    { display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  title:     { fontSize: 17, fontWeight: 700, color: '#1f2937' },
-  sub:       { fontSize: 13, color: '#4b5563', marginTop: 2 },
-  aiBadge:   { fontSize: 11, color: '#2563eb', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', padding: '3px 10px', borderRadius: 20 },
-  resetBtn:  { background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 14px', color: '#1f2937', cursor: 'pointer', fontSize: 13, fontFamily: 'Heebo, sans-serif', marginRight: 'auto' },
+  container: { padding: '24px 16px 80px', display: 'flex', flexDirection: 'column', gap: 12 },
 
-  grid:    { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 },
-  optCard: { background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 8 },
-  optBest: { border: '1px solid rgba(37,99,235,0.35)', boxShadow: '0 0 0 3px rgba(37,99,235,0.08)' },
-  badge:   { fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, alignSelf: 'flex-start' },
+  resultsHeader: {
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 16, padding: '16px 20px',
+    display: 'flex', alignItems: 'flex-start',
+    justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+    boxShadow: '0 2px 8px rgba(28,25,23,0.04)',
+  },
+  title: {
+    fontSize: 16, fontWeight: 900, color: 'var(--foreground)',
+    letterSpacing: '-0.01em', lineHeight: 1.2,
+  },
+  sub: {
+    fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4,
+    display: 'flex', alignItems: 'center', gap: 6,
+  },
+  headerActions: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
+  actionBtn: {
+    background: 'none', border: '1.5px solid var(--border)',
+    borderRadius: 10, padding: '7px 12px',
+    fontSize: 13, fontWeight: 700, color: 'var(--muted-foreground)',
+    cursor: 'pointer', fontFamily: 'var(--font-body)',
+    display: 'flex', alignItems: 'center', gap: 6,
+    transition: 'border-color 0.15s, color 0.15s',
+    whiteSpace: 'nowrap',
+  },
+  actionBtnStop: {
+    color: 'var(--destructive)', borderColor: 'rgba(220,38,38,0.4)',
+    background: 'rgba(220,38,38,0.06)',
+  },
 
-  location: { fontSize: 18, fontWeight: 700, color: '#1f2937' },
-  distance: { fontSize: 12, color: '#6b7280' },
+  geoErr: {
+    background: 'rgba(var(--destructive-rgb),0.06)', border: '1px solid rgba(var(--destructive-rgb),0.25)',
+    borderRadius: 10, padding: '10px 14px',
+    fontSize: 13, color: 'var(--destructive)',
+  },
 
-  timeline: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  tlStep:   { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '4px 10px', fontSize: 12, color: '#1f2937', fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' },
-  tlArrow:  { color: '#9ca3af', fontSize: 12, fontWeight: 700 },
-  tlDest:   { background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669' },
+  sectionLabel: {
+    fontSize: 13, fontWeight: 800, color: 'var(--muted-foreground)',
+    letterSpacing: '0.04em', textTransform: 'uppercase',
+    padding: '0 2px',
+  },
 
-  stats:   { display: 'flex', gap: 8 },
-  stat:    { flex: 1, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 6px', textAlign: 'center' },
-  statVal: { fontSize: 14, fontWeight: 700, color: '#1f2937' },
-  statLbl: { fontSize: 10, color: '#6b7280', marginTop: 2 },
+  exitList: { display: 'flex', flexDirection: 'column', gap: 12 },
 
-  jrWrap:  { borderTop: '1px solid #e5e7eb', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 },
-  jrTitle: { fontSize: 11, color: '#6b7280', marginBottom: 4 },
-  jrRow:   { display: 'flex', alignItems: 'center', gap: 8 },
-  jrLine:  { fontSize: 13, fontWeight: 700, color: '#2563eb', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 6, padding: '2px 8px', flexShrink: 0 },
-  jrDeps:  { display: 'flex', gap: 4, flexWrap: 'wrap' },
-  jrChip:  { fontSize: 12, color: '#1f2937', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, padding: '2px 7px' },
-  jrNone:  { fontSize: 11, color: '#9ca3af' },
+  exitCard: {
+    background: 'var(--card)', border: '1.5px solid var(--border)',
+    borderRadius: 16, padding: '20px 24px',
+    display: 'flex', flexDirection: 'column', gap: 16,
+    boxShadow: '0 2px 8px rgba(28,25,23,0.04)',
+  },
+  exitCardGateway: {
+    border: '2px solid rgba(var(--accent-rgb),0.35)',
+    boxShadow: '0 4px 16px rgba(61,122,58,0.07)',
+  },
 
-  section: { marginTop: 20 },
-  sectionTitle: { fontSize: 15, fontWeight: 700, color: '#1f2937', marginBottom: 4 },
-  sectionSub:   { fontSize: 12, color: '#4b5563', marginBottom: 12 },
+  exitTop:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  exitNameRow:{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  exitName:   {
+    fontSize: 22, fontWeight: 900, color: 'var(--foreground)',
+    letterSpacing: '-0.02em', lineHeight: 1.1,
+  },
+  gatewayBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+    fontSize: 11, fontWeight: 700,
+    background: 'rgba(var(--accent-rgb),0.08)', color: 'var(--accent)',
+    border: '1px solid rgba(var(--accent-rgb),0.35)',
+    borderRadius: 999, padding: '3px 10px',
+    whiteSpace: 'nowrap',
+  },
 
-  accordionBtn:     { width: '100%', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'right', gap: 8 },
-  accordionTitle:   { fontSize: 15, fontWeight: 700, color: '#1f2937' },
-  accordionSub:     { fontSize: 12, color: '#4b5563', marginTop: 2 },
-  accordionRight:   { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 },
-  accordionArrow:   { fontSize: 12, color: '#6b7280' },
-  accordionContent: { marginTop: 12 },
+  distBadge: {
+    fontSize: 11, fontWeight: 700,
+    color: 'var(--primary)', background: 'rgba(var(--primary-rgb),0.08)',
+    border: '1px solid rgba(var(--primary-rgb),0.3)',
+    borderRadius: 6, padding: '3px 8px', flexShrink: 0,
+  },
+  distBadgeClose: {
+    color: 'var(--destructive)', background: 'rgba(220,38,38,0.08)',
+    border: '1px solid rgba(220,38,38,0.35)',
+    animation: 'pulse 1s infinite',
+  },
 
-  clockBadge:     { background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 8, padding: '4px 12px', fontSize: 14, fontWeight: 700, color: '#2563eb', flexShrink: 0 },
-  transitLoading: { color: '#4b5563', fontSize: 13, padding: '12px 0' },
+  journey: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  journeyStep: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    background: 'var(--background)', border: '1px solid var(--border)',
+    borderRadius: 8, padding: '6px 12px',
+    fontSize: 13, fontWeight: 600, color: 'var(--muted-foreground)',
+  },
+  journeyDest: {
+    border: '1px solid rgba(var(--accent-rgb),0.35)',
+    background: 'rgba(var(--accent-rgb),0.08)', color: 'var(--accent)', fontWeight: 700,
+  },
+  journeyArrow: { color: 'var(--border)', fontSize: 12, lineHeight: 1 },
 
-  routesWrap:   { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 },
-  routeCard:    { background: '#f9fafb', borderRadius: 10, padding: '10px 14px', border: '1px solid #e5e7eb' },
-  routeTop:     { display: 'flex', alignItems: 'center', gap: 12 },
-  lineNum:      { fontSize: 13, fontWeight: 700, padding: '4px 10px', borderRadius: 8, flexShrink: 0 },
-  routeName:    { fontSize: 14, fontWeight: 600, color: '#1f2937' },
-  routeCompany: { fontSize: 11, color: '#4b5563', marginTop: 2 },
-  routeType:    { fontSize: 11, color: '#6b7280', flexShrink: 0 },
+  linesRow: { display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  linesLabel: { fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)' },
+  linesNone:  { fontSize: 12, color: 'var(--muted-foreground)' },
+  linePill: {
+    fontSize: 13, fontWeight: 700,
+    background: 'rgba(29,78,216,0.07)', color: 'var(--primary)',
+    border: '1px solid rgba(29,78,216,0.2)',
+    borderRadius: 6, padding: '4px 12px',
+  },
+  linePillMatch: {
+    background: 'rgba(var(--accent-rgb),0.08)', color: 'var(--accent)',
+    border: '1px solid rgba(var(--accent-rgb),0.35)', fontWeight: 800,
+  },
 
-  depsRow:      { display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e7eb' },
-  depChip:      { display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '4px 10px', minWidth: 52 },
-  depChipFirst: { background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)' },
-  depTime:      { fontSize: 14, fontWeight: 700, color: '#1f2937' },
-  depMin:       { fontSize: 10, color: '#4b5563', marginTop: 1 },
-  noDepMsg:     { fontSize: 12, color: '#6b7280', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' },
+  scheduleBtn: {
+    background: 'var(--background)', border: '1.5px solid var(--border)',
+    borderRadius: 10, padding: '9px 14px',
+    fontSize: 13, fontWeight: 700, color: 'var(--muted-foreground)',
+    cursor: 'pointer', fontFamily: 'var(--font-body)',
+    display: 'flex', alignItems: 'center', gap: 6,
+    transition: 'border-color 0.15s',
+    width: '100%', textAlign: 'right',
+  },
 
-  stopsWrap:   { marginTop: 8 },
-  stopsHeader: { fontSize: 12, color: '#4b5563', marginBottom: 8 },
-  stopsList:   { display: 'flex', flexDirection: 'column', gap: 6 },
-  stopItem:    { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 },
-  stopDot:     { color: '#2563eb', fontSize: 8 },
-  stopName:    { color: '#1f2937', fontWeight: 500 },
-  stopCity:    { color: '#4b5563', fontSize: 12 },
-  stopCode:    { color: '#2563eb', fontSize: 11, background: 'rgba(37,99,235,0.08)', padding: '1px 6px', borderRadius: 4 },
-  noTransit:   { color: '#4b5563', fontSize: 13, padding: '8px 0' },
+  busPanel: {
+    display: 'flex', flexDirection: 'column', gap: 8,
+    borderTop: '1px solid var(--muted)', paddingTop: 12,
+  },
+  busRow: {
+    background: 'var(--background)', border: '1px solid var(--border)',
+    borderRadius: 10, padding: '10px 14px',
+    display: 'flex', flexDirection: 'column', gap: 8,
+  },
+  busRowMatch: { background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.35)' },
+  busRowTop:  { display: 'flex', alignItems: 'flex-start', gap: 10 },
+  busInfo:    { flex: 1 },
+  busDest:    { fontSize: 13, fontWeight: 600, color: 'var(--foreground)', lineHeight: 1.4 },
+  busDestMatch:{ color: 'var(--accent)', fontWeight: 700 },
+  busCompany: { fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 },
+  matchTag: {
+    marginRight: 8, fontSize: 11, color: 'var(--accent)',
+    background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.35)',
+    borderRadius: 6, padding: '1px 6px', fontWeight: 700,
+  },
 
-  hotspot:  { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f3f4f6' },
-  rank:     { width: 28, height: 28, borderRadius: '50%', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#2563eb', flexShrink: 0 },
-  hsName:   { fontSize: 14, fontWeight: 600, color: '#1f2937' },
-  hsDetail: { fontSize: 12, color: '#4b5563', marginTop: 2 },
-  heat:     { fontSize: 12 },
+  lineNum: {
+    fontSize: 12, fontWeight: 800,
+    color: 'var(--primary)', background: 'rgba(29,78,216,0.08)',
+    border: '1px solid rgba(29,78,216,0.2)',
+    borderRadius: 6, padding: '3px 8px',
+    display: 'flex', alignItems: 'center', gap: 5,
+    flexShrink: 0,
+  },
+  lineNumMatch: {
+    color: 'var(--accent)', background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.35)',
+  },
+  lineNumTrain: {
+    color: 'var(--warning)', background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.25)',
+  },
+
+  deps:        { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  depChip: {
+    fontSize: 12, color: 'var(--foreground)',
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 6, padding: '2px 8px',
+  },
+  depChipMatch: {
+    background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.35)', color: 'var(--accent)', fontWeight: 600,
+  },
+  noDep: { fontSize: 11, color: 'var(--muted-foreground)' },
+
+  transitSection: { marginTop: 8 },
+  accordionBtn: {
+    width: '100%',
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 14, padding: '14px 20px',
+    cursor: 'pointer',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    textAlign: 'right', gap: 8, fontFamily: 'var(--font-body)',
+    boxShadow: '0 2px 8px rgba(28,25,23,0.04)',
+  },
+  accordionTitle: {
+    fontSize: 14, fontWeight: 800, color: 'var(--foreground)',
+    display: 'flex', alignItems: 'center', gap: 8,
+  },
+  accordionSub: { fontSize: 12, color: 'var(--muted-foreground)', marginTop: 3 },
+  accordionRight: {
+    display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, color: 'var(--muted-foreground)',
+  },
+  clockBadge: {
+    background: 'rgba(var(--primary-rgb),0.08)', border: '1px solid rgba(var(--primary-rgb),0.3)',
+    borderRadius: 8, padding: '4px 10px',
+    fontSize: 13, fontWeight: 700, color: 'var(--primary)',
+    display: 'flex', alignItems: 'center', gap: 5,
+  },
+  accordionContent: { marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 },
+  loading: { color: 'var(--muted-foreground)', fontSize: 13, padding: '8px 4px' },
+
+  routeCard: {
+    background: 'var(--background)', border: '1px solid var(--border)',
+    borderRadius: 10, padding: '12px 16px',
+    display: 'flex', flexDirection: 'column', gap: 10,
+  },
+  routeTop: { display: 'flex', alignItems: 'center', gap: 12 },
+  routeName: { fontSize: 14, fontWeight: 600, color: 'var(--foreground)' },
+  depsRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  depCard: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 8, padding: '5px 10px', minWidth: 52,
+  },
+  depCardFirst: { background: 'rgba(var(--primary-rgb),0.08)', border: '1px solid rgba(var(--primary-rgb),0.3)' },
+  depTime: { fontSize: 14, fontWeight: 700, color: 'var(--foreground)' },
+  depMin:  { fontSize: 10, color: 'var(--muted-foreground)', marginTop: 1 },
+};
+
+const v = {
+  wrap: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    paddingTop: 12, borderTop: '1px solid var(--muted)',
+  },
+  btn: {
+    display: 'flex', alignItems: 'center', gap: 5,
+    background: 'var(--background)', border: '1px solid var(--border)',
+    borderRadius: 999, padding: '5px 12px',
+    fontSize: 13, cursor: 'pointer',
+    fontFamily: 'var(--font-body)', color: 'var(--muted-foreground)',
+    transition: 'all 0.15s',
+  },
+  btnUp:   { background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.35)', color: 'var(--accent)', fontWeight: 700 },
+  btnDown: { background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--destructive)', fontWeight: 700 },
+  hint:    { fontSize: 11, color: 'var(--muted-foreground)', flex: 1, textAlign: 'left' },
+};
+
+const al = {
+  overlay: {
+    position: 'fixed', inset: 0,
+    background: 'rgba(0,0,0,0.65)', zIndex: 10000,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  box: {
+    background: 'var(--card)', borderRadius: 20,
+    padding: '32px 28px', maxWidth: 340, width: '100%',
+    textAlign: 'center', position: 'relative',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+  },
+  pulse: {
+    position: 'absolute', top: -10, left: '50%',
+    transform: 'translateX(-50%)',
+    width: 20, height: 20, borderRadius: '50%',
+    background: 'var(--destructive)', boxShadow: '0 0 0 8px rgba(220,38,38,0.2)',
+  },
+  iconWrap: { marginTop: 8 },
+  title: { fontSize: 22, fontWeight: 900, color: 'var(--destructive)' },
+  loc:   { fontSize: 18, fontWeight: 800, color: 'var(--foreground)' },
+  dist:  { fontSize: 14, color: 'var(--muted-foreground)' },
+  btn: {
+    marginTop: 8, background: 'var(--destructive)',
+    border: 'none', borderRadius: 12,
+    padding: '14px 32px', color: 'var(--destructive-foreground)',
+    fontSize: 16, fontWeight: 800,
+    cursor: 'pointer', fontFamily: 'var(--font-body)', width: '100%',
+  },
 };

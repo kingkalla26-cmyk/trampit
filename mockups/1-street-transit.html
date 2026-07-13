@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trampit — Street / Transit</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: #0f172a;
+    border-bottom: 3px solid #f97316;
+    padding: 0 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+  .logo span { color: #f97316; }
+  .logo-icon {
+    display: inline-block;
+    background: #f97316;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 8px;
+    letter-spacing: 1px;
+  }
+  .beta {
+    font-size: 10px;
+    font-weight: 800;
+    color: #f97316;
+    border: 1.5px solid #f97316;
+    padding: 2px 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .nav-btn.active {
+    color: #f97316;
+    border-bottom-color: #f97316;
+    background: rgba(249,115,22,0.05);
+  }
+
+  /* ── Main ── */
+  .main { padding: 20px 16px 100px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Road Sign Card ── */
+  .sign-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .sign-header {
+    background: #1d4ed8;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sign-num {
+    width: 26px;
+    height: 26px;
+    background: #fff;
+    color: #1d4ed8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .sign-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+  .sign-sub   { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 1px; }
+  .sign-body  { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+  .input-label .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 5px; }
+  .dot-blue  { background: #3b82f6; }
+  .dot-green { background: #22c55e; }
+  .input-field {
+    background: #0f172a;
+    border: 1.5px solid #334155;
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: #f1f5f9;
+    font-size: 14px;
+    font-family: 'Heebo', sans-serif;
+    font-weight: 600;
+  }
+  .input-field::placeholder { color: #475569; }
+
+  /* ── Analyze Button ── */
+  .analyze-btn {
+    background: #f97316;
+    border: none;
+    border-radius: 4px;
+    padding: 16px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 900;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    letter-spacing: 0.5px;
+  }
+  .analyze-btn .arrow {
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  /* ── Route Options ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #64748b;
+    text-transform: uppercase;
+    padding: 0 2px;
+    margin-top: 4px;
+  }
+
+  .route-card {
+    background: #1e293b;
+    border: 1.5px solid #334155;
+    border-radius: 4px;
+    padding: 14px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .route-card.best {
+    border-color: #f97316;
+    background: rgba(249,115,22,0.06);
+  }
+  .route-meta { display: flex; align-items: center; gap: 8px; }
+  .route-time { font-size: 22px; font-weight: 900; color: #fff; }
+  .route-dist { font-size: 13px; color: #64748b; font-weight: 600; }
+  .route-tag-fast {
+    margin-right: auto;
+    background: #f97316;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+  .route-summary { font-size: 13px; font-weight: 700; color: #94a3b8; }
+  .route-roads { display: flex; gap: 6px; align-items: center; }
+  .road-badge {
+    background: #0f172a;
+    border: 1.5px solid #475569;
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 3px;
+  }
+  .road-badge.toll { border-color: #f97316; color: #f97316; }
+  .road-arrow { color: #475569; font-size: 11px; }
+
+  /* ── Results ── */
+  .results-header {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .results-title { font-size: 16px; font-weight: 900; }
+  .results-sub   { font-size: 12px; color: #64748b; margin-top: 2px; font-weight: 600; }
+  .track-btn {
+    background: none;
+    border: 1.5px solid #f97316;
+    color: #f97316;
+    padding: 6px 14px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  .exit-card {
+    background: #1e293b;
+    border: 1.5px solid #334155;
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .exit-card.gateway { border-color: #22c55e; }
+  .exit-name { font-size: 18px; font-weight: 900; color: #fff; }
+  .exit-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .exit-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .badge-gw    { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid #22c55e; }
+  .badge-road  { background: #0f172a; color: #94a3b8; border: 1px solid #475569; }
+  .badge-bus   { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid #3b82f6; }
+
+  .timeline { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .tl-step {
+    background: #0f172a;
+    border: 1px solid #334155;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+  .tl-dest { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.08); }
+  .tl-arrow { color: #475569; font-size: 11px; }
+
+  .bus-lines { display: flex; gap: 5px; flex-wrap: wrap; }
+  .bus-line {
+    font-size: 12px;
+    font-weight: 800;
+    color: #60a5fa;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .bus-line.relevant { color: #22c55e; background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    left: 20px;
+    background: #f97316;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+  }
+
+  /* ── Page label ── */
+  .page-label {
+    position: fixed;
+    top: 12px;
+    left: 16px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #475569;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-icon">TRMP</span>
+    טרמפ<span>יט</span>
+  </div>
+  <div class="beta">BETA</div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active">חיפוש</button>
+  <button class="nav-btn">מפה</button>
+  <button class="nav-btn">בדרך</button>
+</nav>
+
+<div class="main">
+
+  <!-- Step 1 -->
+  <div class="sign-card">
+    <div class="sign-header">
+      <div class="sign-num">1</div>
+      <div>
+        <div class="sign-title">מאיפה לאיפה?</div>
+        <div class="sign-sub">הזן נקודת מוצא ויעד סופי</div>
+      </div>
+    </div>
+    <div class="sign-body">
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label"><span class="dot dot-blue"></span>מוצא</div>
+          <input class="input-field" placeholder="צרעה" value="צרעה" readonly>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span class="dot dot-green"></span>יעד</div>
+          <input class="input-field" placeholder="אשקלון" value="אשקלון" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="sign-card">
+    <div class="sign-header" style="background:#475569;">
+      <div class="sign-num" style="background:#fff; color:#475569;">2</div>
+      <div>
+        <div class="sign-title">לאן נוסע הרכב?</div>
+        <div class="sign-sub">יעד הנהג שנסע לו</div>
+      </div>
+    </div>
+    <div class="sign-body">
+      <input class="input-field" placeholder="אשקלון" value="אשקלון" readonly>
+    </div>
+  </div>
+
+  <!-- Analyze btn -->
+  <button class="analyze-btn">
+    <span>נתח מסלול — מצא צמתים</span>
+    <span class="arrow">←</span>
+  </button>
+
+  <!-- Route options -->
+  <div class="section-label">בחר נתיב</div>
+
+  <div class="route-card best">
+    <div class="route-meta">
+      <span class="route-time">48 דק'</span>
+      <span class="route-dist">· 62 ק"מ</span>
+      <span class="route-tag-fast">הכי מהיר</span>
+    </div>
+    <div class="route-summary">כביש 38 → כביש 35 → כביש 34</div>
+    <div class="route-roads">
+      <span class="road-badge">38</span>
+      <span class="road-arrow">→</span>
+      <span class="road-badge">35</span>
+      <span class="road-arrow">→</span>
+      <span class="road-badge">34</span>
+    </div>
+  </div>
+
+  <div class="route-card">
+    <div class="route-meta">
+      <span class="route-time">54 דק'</span>
+      <span class="route-dist">· 71 ק"מ</span>
+    </div>
+    <div class="route-summary">כביש 6 → כביש 35</div>
+    <div class="route-roads">
+      <span class="road-badge toll">6</span>
+      <span class="road-arrow">→</span>
+      <span class="road-badge">35</span>
+      <span style="margin-right:auto; font-size:10px; color:#f97316; font-weight:800; letter-spacing:0.5px;">כולל כביש 6</span>
+    </div>
+  </div>
+
+  <!-- separator -->
+  <div class="section-label" style="margin-top:8px;">נקודות יציאה מומלצות</div>
+
+  <div class="results-header">
+    <div>
+      <div class="results-title">צרעה → אשקלון</div>
+      <div class="results-sub">הרכב נוסע לאשקלון</div>
+    </div>
+    <button class="track-btn">📍 עקוב</button>
+  </div>
+
+  <!-- Exit cards -->
+  <div class="exit-card gateway">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="exit-name">מסעף צרעה</div>
+      <span class="exit-badge badge-gw">⭐ שער ליעדך</span>
+    </div>
+    <div class="timeline">
+      <span class="tl-step">🚗 טרמפ</span>
+      <span class="tl-arrow">→</span>
+      <span class="tl-step">🚌 840</span>
+      <span class="tl-arrow">→</span>
+      <span class="tl-step tl-dest">🟢 אשקלון</span>
+    </div>
+    <div class="bus-lines">
+      <span class="bus-line relevant">840 ✓</span>
+      <span class="bus-line relevant">446 ✓</span>
+      <span class="bus-line">32</span>
+    </div>
+  </div>
+
+  <div class="exit-card">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="exit-name">מחלף גבעת שרת</div>
+    </div>
+    <div class="timeline">
+      <span class="tl-step">🚗 טרמפ</span>
+      <span class="tl-arrow">→</span>
+      <span class="tl-step">🚌 446</span>
+      <span class="tl-arrow">→</span>
+      <span class="tl-step tl-dest">🟢 אשקלון</span>
+    </div>
+    <div class="bus-lines">
+      <span class="bus-line relevant">446 ✓</span>
+      <span class="bus-line">12</span>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab">📍 דווח טרמפ</button>
+
+</body>
+</html>

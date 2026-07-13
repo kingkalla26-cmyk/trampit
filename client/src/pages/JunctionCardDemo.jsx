@@ -21,10 +21,10 @@ export default function JunctionCardDemo() {
 
         {/* Header */}
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 4 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>
             צמתים — נתוני OpenStreetMap
           </h2>
-          <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>
             {error
               ? `⚠️ ${error}`
               : `${junctions.length} צמתים נטענו מה-OSM`}
@@ -41,7 +41,7 @@ export default function JunctionCardDemo() {
             width: '100%',
             padding: '10px 14px',
             borderRadius: 12,
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--border)',
             fontSize: 14,
             marginBottom: 20,
             boxSizing: 'border-box',
@@ -51,11 +51,11 @@ export default function JunctionCardDemo() {
 
         {/* Cards */}
         {error && junctions.length === 0 ? (
-          <p style={{ color: '#ef4444', textAlign: 'center', marginTop: 40 }}>
+          <p style={{ color: 'var(--destructive)', textAlign: 'center', marginTop: 40 }}>
             לא ניתן לטעון נתונים. בדוק חיבור לאינטרנט.
           </p>
         ) : visible.length === 0 ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: 40 }}>
+          <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', marginTop: 40 }}>
             לא נמצאו צמתים התואמים את החיפוש.
           </p>
         ) : (
@@ -64,7 +64,7 @@ export default function JunctionCardDemo() {
               <JunctionCard key={j.id} {...j} />
             ))}
             {visible.length > 50 && (
-              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+              <p style={{ color: 'var(--muted-foreground)', fontSize: 13, marginTop: 8 }}>
                 מוצגים 50 מתוך {visible.length} תוצאות. צמצם את החיפוש.
               </p>
             )}

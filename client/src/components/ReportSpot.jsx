@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconPin, IconCheckCircle } from '../icons.jsx';
 
 const DIRECTIONS = ['צפון', 'דרום', 'מזרח', 'מערב', 'צפון-דרום', 'כל הכיוונים'];
 
@@ -67,13 +68,16 @@ export default function ReportSpot({ onClose, onSuccess }) {
 
         {done ? (
           <div style={s.success}>
-            <div style={{ fontSize: 40 }}>✅</div>
+            <IconCheckCircle size={40} style={{ color: 'var(--accent)' }} />
             <div style={s.successText}>תודה! הדיווח נשמר</div>
           </div>
         ) : (
           <>
             <div style={s.header}>
-              <div style={s.title}>📍 דווח על נקודת טרמפ</div>
+              <div style={s.title}>
+                <IconPin size={17} style={{ color: 'var(--primary)' }} />
+                דווח על נקודת טרמפ
+              </div>
               <button style={s.closeBtn} onClick={onClose}>✕</button>
             </div>
 
@@ -83,7 +87,8 @@ export default function ReportSpot({ onClose, onSuccess }) {
               onClick={useCurrentLocation}
               disabled={gpsLoading}
             >
-              {gpsLoading ? '⏳ מאתר מיקום...' : '📍 השתמש במיקום הנוכחי'}
+              <IconPin size={15} style={{ color: 'var(--accent)' }} />
+              {gpsLoading ? 'מאתר מיקום...' : 'השתמש במיקום הנוכחי'}
             </button>
             {form.lat && (
               <div style={s.gpsConfirm}>
@@ -138,20 +143,20 @@ export default function ReportSpot({ onClose, onSuccess }) {
 }
 
 const s = {
-  overlay:    { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
-  sheet:      { background: '#ffffff', borderRadius: '20px 20px 0 0', padding: '12px 20px 32px', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', direction: 'rtl' },
-  handle:     { width: 40, height: 4, background: '#e5e7eb', borderRadius: 2, margin: '0 auto 16px' },
+  overlay:    { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 2000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  sheet:      { background: 'var(--card)', borderRadius: '20px 20px 0 0', padding: '12px 20px 32px', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', direction: 'rtl' },
+  handle:     { width: 40, height: 4, background: 'var(--border)', borderRadius: 2, margin: '0 auto 16px' },
   header:     { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  title:      { fontSize: 17, fontWeight: 700, color: '#1f2937' },
-  closeBtn:   { background: 'none', border: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer' },
-  gpsBtn:     { width: '100%', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 10, padding: '11px 14px', fontSize: 14, fontWeight: 600, color: '#15803d', cursor: 'pointer', fontFamily: 'Heebo, sans-serif', marginBottom: 8 },
-  gpsConfirm: { fontSize: 12, color: '#059669', background: '#f0fdf4', borderRadius: 8, padding: '6px 10px', marginBottom: 12 },
+  title:      { fontFamily: 'var(--font-heading)', fontSize: 16.5, fontWeight: 700, color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: 8 },
+  closeBtn:   { background: 'none', border: 'none', fontSize: 18, color: 'var(--muted-foreground)', cursor: 'pointer' },
+  gpsBtn:     { width: '100%', background: 'rgba(var(--accent-rgb),0.08)', border: '1.5px solid rgba(var(--accent-rgb),0.35)', borderRadius: 10, padding: '11px 14px', fontSize: 14, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font-body)', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  gpsConfirm: { fontSize: 12, color: 'var(--accent)', background: 'rgba(var(--accent-rgb),0.08)', borderRadius: 8, padding: '6px 10px', marginBottom: 12 },
   field:      { marginBottom: 14 },
   row:        { display: 'flex', gap: 12 },
-  label:      { display: 'block', fontSize: 12, fontWeight: 600, color: '#4b5563', marginBottom: 6 },
-  input:      { width: '100%', background: '#f1f5f9', border: '1.5px solid transparent', borderRadius: 10, padding: '11px 14px', fontSize: 15, color: '#1f2937', fontFamily: 'Heebo, sans-serif', direction: 'rtl', outline: 'none' },
-  error:      { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', color: '#dc2626', fontSize: 13, marginBottom: 12 },
-  submitBtn:  { width: '100%', background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', border: 'none', borderRadius: 12, padding: 14, color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Heebo, sans-serif' },
+  label:      { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 6 },
+  input:      { width: '100%', background: 'var(--muted)', border: '1.5px solid transparent', borderRadius: 10, padding: '11px 14px', fontSize: 15, color: 'var(--foreground)', fontFamily: 'var(--font-body)', direction: 'rtl', outline: 'none' },
+  error:      { background: 'rgba(var(--destructive-rgb),0.06)', border: '1px solid rgba(var(--destructive-rgb),0.25)', borderRadius: 8, padding: '10px 14px', color: 'var(--destructive)', fontSize: 13, marginBottom: 12 },
+  submitBtn:  { width: '100%', background: 'var(--primary)', border: 'none', borderRadius: 12, padding: 14, color: 'var(--primary-foreground)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-heading)' },
   success:    { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '32px 0' },
-  successText:{ fontSize: 17, fontWeight: 700, color: '#059669' },
+  successText:{ fontSize: 17, fontWeight: 700, color: 'var(--accent)' },
 };

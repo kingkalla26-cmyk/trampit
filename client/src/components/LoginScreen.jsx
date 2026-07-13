@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconRoute } from '../icons.jsx';
 
 export default function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState('');
@@ -33,7 +34,10 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div style={s.root}>
       <div style={s.card}>
-        <div style={s.logo}>🛣 טרמפ<span style={{ color: '#2563eb' }}>יט</span></div>
+        <div style={s.logo}>
+          <IconRoute size={26} style={{ color: 'var(--primary)' }} />
+          טרמפ<span style={{ color: 'var(--primary)' }}>יט</span>
+        </div>
         <div style={s.sub}>הזן סיסמה להמשך</div>
 
         <form onSubmit={handleSubmit} style={s.form}>
@@ -57,12 +61,12 @@ export default function LoginScreen({ onLogin }) {
 }
 
 const s = {
-  root:  { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f3f4f6' },
-  card:  { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 20, padding: '40px 32px', width: '100%', maxWidth: 360, textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
-  logo:  { fontSize: 28, fontWeight: 700, color: '#1f2937', marginBottom: 8 },
-  sub:   { fontSize: 14, color: '#4b5563', marginBottom: 28 },
+  root:  { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--muted)' },
+  card:  { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, padding: '40px 32px', width: '100%', maxWidth: 360, textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+  logo:  { fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--foreground)', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  sub:   { fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 28 },
   form:  { display: 'flex', flexDirection: 'column', gap: 12 },
-  input: { background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 10, padding: '14px 16px', color: '#1f2937', fontSize: 16, fontFamily: 'Heebo, sans-serif', outline: 'none', direction: 'rtl', textAlign: 'right' },
-  error: { color: '#dc2626', fontSize: 13 },
-  btn:   { background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', border: 'none', borderRadius: 10, padding: '14px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Heebo, sans-serif' },
+  input: { background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', color: 'var(--foreground)', fontSize: 16, fontFamily: 'var(--font-body)', outline: 'none', direction: 'rtl', textAlign: 'right' },
+  error: { color: 'var(--destructive)', fontSize: 13 },
+  btn:   { background: 'var(--primary)', border: 'none', borderRadius: 10, padding: '14px', color: 'var(--primary-foreground)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-heading)' },
 };

@@ -1,112 +1,72 @@
-import { useRef, useState } from 'react';
 import AutocompleteInput from './AutocompleteInput.jsx';
-
-const NAV_PATTERNS = [/waze\.com/i, /waze:\/\//i, /maps\.google\./i, /goo\.gl\/maps/i, /maps\.app\.goo\.gl/i];
-
-function isNavLink(url) {
-  try { new URL(url); return NAV_PATTERNS.some(p => p.test(url)); }
-  catch { return false; }
-}
-
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+import { IconSparkles, IconArrowLeft } from '../icons.jsx';
 
 export default function SearchForm({ form, setForm, onAnalyze, loading, cities = [] }) {
-  const fileInputRef = useRef();
-  const [imageError, setImageError] = useState('');
-
-  function handleFile(file) {
-    if (!file) return;
-    if (!ALLOWED_TYPES.has(file.type)) {
-      setImageError('סוג קובץ לא נתמך — יש להעלות JPG, PNG או WebP בלבד');
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      setImageError('הקובץ גדול מדי — הגודל המקסימלי הוא 5MB');
-      return;
-    }
-    setImageError('');
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setForm(f => ({ ...f, uploadedImage: ev.target.result.split(',')[1], imagePreview: ev.target.result }));
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function handleWazeLink(val) {
-    const trimmed = val.trim();
-    let status = '';
-    let linkVal = null;
-    if (!trimmed) {
-      status = '';
-    } else if (isNavLink(trimmed)) {
-      linkVal = trimmed;
-      status = 'ok';
-    } else if (trimmed.startsWith('http') || trimmed.startsWith('waze')) {
-      linkVal = trimmed;
-      status = 'warning';
-    } else {
-      status = 'error';
-    }
-    setForm(f => ({ ...f, wazeLink: linkVal, wazeLinkInput: val, wazeLinkStatus: status }));
-  }
-
-  async function pasteFromClipboard() {
-    try {
-      const text = await navigator.clipboard.readText();
-      handleWazeLink(text);
-    } catch {
-      alert('לא ניתן לגשת ללוח — הדבק ידנית');
-    }
-  }
-
   return (
     <div style={s.container}>
+
+      {/* Hero strip */}
+      <div style={s.hero}>
+        <div style={s.heroLabel}>טרמפיט · ניווט חכם</div>
+        <div style={s.heroTitle}>לאן הולכים היום?</div>
+        <div style={s.heroSub}>מלא את הפרטים ונמצא את הצמתים הכי טובים</div>
+      </div>
+
       {/* STEP 1 */}
       <div style={s.card}>
         <div style={s.cardHeader}>
-          <div style={{ ...s.stepNum, ...s.stepActive }}>1</div>
+          <div style={s.stepNum}>1</div>
           <div>
             <div style={s.cardTitle}>מאיפה לאיפה?</div>
-            <div style={s.cardSub}>הזן את נקודת המוצא והיעד שלך</div>
+            <div style={s.cardSub}>נקודת מוצא ויעד סופי שלך</div>
           </div>
         </div>
-        <div style={s.inputRow}>
-          <div style={s.inputGroup}>
-            <label style={s.label}>🔵 נקודת מוצא</label>
-            <AutocompleteInput
-              value={form.origin}
-              onChange={v => setForm(f => ({ ...f, origin: v }))}
-              placeholder="למשל: באר שבע"
-              cities={cities}
-              showLocationBtn={true}
-            />
-          </div>
-          <div style={s.inputGroup}>
-            <label style={s.label}>🟢 יעד סופי</label>
-            <AutocompleteInput
-              value={form.destination}
-              onChange={v => setForm(f => ({ ...f, destination: v }))}
-              placeholder="למשל: ירושלים"
-              cities={cities}
-            />
+        <div style={s.cardBody}>
+          <div style={s.inputRow}>
+            <div style={s.inputGroup}>
+              <label style={s.label}>
+                <span style={{ ...s.lblDot, background: 'var(--primary)' }} />
+                מוצא
+              </label>
+              <AutocompleteInput
+                value={form.origin}
+                onChange={v => setForm(f => ({ ...f, origin: v }))}
+                placeholder="למשל: באר שבע"
+                cities={cities}
+                showLocationBtn={true}
+              />
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>
+                <span style={{ ...s.lblDot, background: 'var(--accent)' }} />
+                יעד
+              </label>
+              <AutocompleteInput
+                value={form.destination}
+                onChange={v => setForm(f => ({ ...f, destination: v }))}
+                placeholder="למשל: ירושלים"
+                cities={cities}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* STEP 2 — מסלול הרכב (אחת מ-3 אפשרויות) */}
+      {/* connector — route line linking step 1 to step 2 */}
+      <div style={s.stepConnector}>
+        <div style={s.stepConnectorLine} />
+      </div>
+
+      {/* STEP 2 */}
       <div style={s.card}>
         <div style={s.cardHeader}>
           <div style={s.stepNum}>2</div>
           <div>
-            <div style={s.cardTitle}>מסלול הרכב</div>
-            <div style={s.cardSub}>בחר אחת מהאפשרויות — לאן נוסע הרכב?</div>
+            <div style={s.cardTitle}>לאן נוסע הרכב?</div>
+            <div style={s.cardSub}>יעד הנהג — עוזר למצוא נקודת ירידה</div>
           </div>
         </div>
-
-        {/* אפשרות א׳ — הקלד יעד */}
-        <div style={s.optionBlock}>
-          <div style={s.optionLabel}>🚗 אפשרות א׳ — הקלד יעד הרכב</div>
+        <div style={s.cardBody}>
           <AutocompleteInput
             value={form.carDest}
             onChange={v => setForm(f => ({ ...f, carDest: v }))}
@@ -114,136 +74,160 @@ export default function SearchForm({ form, setForm, onAnalyze, loading, cities =
             cities={cities}
           />
         </div>
-
-        <div style={s.orDivider}>או</div>
-
-        {/* אפשרות ב׳ — קישור Waze */}
-        <div style={s.optionBlock}>
-          <div style={s.optionLabel}>🔗 אפשרות ב׳ — קישור שיתוף מסלול</div>
-          <div style={s.wazeRow}>
-            <input
-              className="ti"
-              style={{ ...s.input, flex: 1 }}
-              type="url"
-              placeholder="הדבק קישור Waze / Google Maps..."
-              value={form.wazeLinkInput || ''}
-              onChange={e => handleWazeLink(e.target.value)}
-              autoComplete="off"
-            />
-            <button style={s.pasteBtn} onClick={pasteFromClipboard}>📋 הדבק</button>
-            {form.wazeLinkInput && (
-              <button style={s.clearBtn} onClick={() => setForm(f => ({ ...f, wazeLink: null, wazeLinkInput: '', wazeLinkStatus: '' }))}>✕</button>
-            )}
-          </div>
-          {form.wazeLinkStatus === 'ok'      && <div style={{ ...s.linkStatus, color: '#059669' }}>✓ קישור ניווט זוהה</div>}
-          {form.wazeLinkStatus === 'warning' && <div style={{ ...s.linkStatus, color: '#d97706' }}>⚠ קישור זוהה — AI ינסה לפרש</div>}
-          {form.wazeLinkStatus === 'error'   && <div style={{ ...s.linkStatus, color: '#dc2626' }}>✕ לא נראה כקישור תקין</div>}
-        </div>
-
-        <div style={s.orDivider}>או</div>
-
-        {/* אפשרות ג׳ — צילום מסך */}
-        <div style={s.optionBlock}>
-          <div style={s.optionLabel}>📸 אפשרות ג׳ — צילום מסך של המסלול</div>
-          <div
-            style={s.uploadZone}
-            onClick={() => fileInputRef.current.click()}
-            onDragOver={e => e.preventDefault()}
-            onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
-          >
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={e => handleFile(e.target.files[0])} />
-            {form.imagePreview ? (
-              <img src={form.imagePreview} alt="preview" style={s.preview} />
-            ) : (
-              <>
-                <div style={{ fontSize: 28 }}>📸</div>
-                <div style={s.uploadTitle}>גרור או לחץ לבחירת קובץ</div>
-                <div style={s.uploadSub}>PNG, JPG · צילום מסך של Waze</div>
-              </>
-            )}
-          </div>
-          {imageError && <div style={s.imageError}>{imageError}</div>}
-          {form.imagePreview && (
-            <button style={s.clearBtn} onClick={() => { setForm(f => ({ ...f, uploadedImage: null, imagePreview: null })); setImageError(''); }}>
-              ✕ הסר תמונה
-            </button>
-          )}
-        </div>
-
-        {/* שעת נסיעה */}
-        <div style={{ ...s.inputGroup, marginTop: 16 }}>
-          <label style={s.label}>⏰ שעת נסיעה משוערת</label>
-          <select
-            className="ti"
-            style={s.input}
-            value={form.travelTime}
-            onChange={e => setForm(f => ({ ...f, travelTime: e.target.value }))}
-          >
-            <option value="now">עכשיו</option>
-            <option value="morning">בוקר (07:00–10:00)</option>
-            <option value="noon">צהריים (12:00–14:00)</option>
-            <option value="afternoon">אחה"צ (15:00–18:00)</option>
-            <option value="evening">ערב (18:00–21:00)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* PROMO BANNER */}
-      <div style={s.promoBanner}>
-        ✨ הטבות בלעדיות מחכות לך בצמתים לאורך המסלול!
       </div>
 
       {/* ANALYZE BUTTON */}
-      <button style={{ ...s.analyzeBtn, opacity: loading ? 0.6 : 1 }} onClick={onAnalyze} disabled={loading}>
-        <span>✦</span>
-        <span>{loading ? 'מנתח...' : 'נתח מסלול — מצא לי את הצמתים הטובים'}</span>
-        <span>←</span>
+      <button
+        className="cta-primary-btn"
+        style={{ ...s.analyzeBtn, opacity: loading ? 0.65 : 1 }}
+        onClick={onAnalyze}
+        disabled={loading}
+      >
+        <div style={s.analyzeBtnLeft}>
+          <IconSparkles size={17} style={{ color: 'var(--background)', opacity: 0.9 }} />
+          <span>{loading ? 'מנתח מסלול...' : 'נתח מסלול — מצא את הצמתים'}</span>
+        </div>
+        <IconArrowLeft size={16} style={{ opacity: 0.45 }} />
       </button>
 
       {/* LOADING */}
       {loading && (
         <div style={s.loadingBox}>
           <div style={s.spinner} />
-          {['מנתח את המסלול...', 'מחפש צמתי חיבור...', 'בודק תחבורה ציבורית...', 'סורק נקודות טרמפ...', 'מחשב אפשרויות...'].map((txt, i) => (
-            <div key={i} style={s.loadingStep}><span style={s.dot} />{txt}</div>
-          ))}
+          <div style={s.loadingSteps}>
+            {['מנתח את המסלול...', 'מחפש צמתי חיבור...', 'בודק תחבורה ציבורית...', 'סורק נקודות טרמפ...', 'מחשב אפשרויות...'].map((txt, i) => (
+              <div key={i} style={s.loadingStep}>
+                <span style={s.dot} />
+                {txt}
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes trampit-spin { to { transform: rotate(360deg); } }
+        @keyframes trampit-dash { from { background-position-y: 0; } to { background-position-y: 26px; } }
+        .cta-primary-btn { transition: transform .15s ease, box-shadow .15s ease; }
+        @media (hover: hover) {
+          .cta-primary-btn:hover:not(:disabled) { transform: scale(1.01); box-shadow: 0 16px 40px -8px rgba(28,25,23,0.22); }
+        }
+        .cta-primary-btn:active:not(:disabled) { transform: scale(0.99); }
+      `}</style>
     </div>
   );
 }
 
 const s = {
-  container:  { display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 16px 80px' },
-  card:       { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06)' },
-  cardHeader: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 },
-  stepNum:    { width: 28, height: 28, borderRadius: '50%', background: '#f3f4f6', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6b7280', flexShrink: 0 },
-  stepActive: { background: '#2563eb', border: '1px solid #2563eb', color: '#fff' },
-  cardTitle:  { fontSize: 16, fontWeight: 700, color: '#1f2937' },
-  cardSub:    { fontSize: 13, color: '#4b5563', marginTop: 2 },
-  inputRow:   { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 },
-  label:      { fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  input:      { background: '#f1f5f9', border: '1.5px solid transparent', borderRadius: 12, padding: '12px 14px', color: '#1f2937', fontSize: 15, fontFamily: 'Heebo, sans-serif', direction: 'rtl', outline: 'none', width: '100%' },
-  promoBanner:{ background: '#feefc3', border: '1px solid #fcd34d', borderRadius: 12, padding: '12px 16px', color: '#b45309', fontSize: 14, fontWeight: 600, textAlign: 'center' },
-  optionBlock:{ marginBottom: 4 },
-  optionLabel:{ fontSize: 13, fontWeight: 600, color: '#4b5563', marginBottom: 8 },
-  wazeBox:    { marginBottom: 12 },
-  wazeLabel:  { fontSize: 13, color: '#4b5563', marginBottom: 8 },
-  wazeRow:    { display: 'flex', gap: 8, alignItems: 'center' },
-  pasteBtn:   { background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 8, padding: '10px 12px', color: '#1f2937', cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' },
-  clearBtn:   { background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 16, padding: '0 4px' },
-  linkStatus: { fontSize: 12, marginTop: 6 },
-  orDivider:  { textAlign: 'center', color: '#9ca3af', fontSize: 13, margin: '12px 0' },
-  uploadZone: { border: '1.5px dashed #d1d5db', borderRadius: 12, padding: '24px 20px', textAlign: 'center', cursor: 'pointer', background: '#f9fafb' },
-  uploadTitle:{ fontSize: 14, fontWeight: 600, color: '#1f2937', marginTop: 8 },
-  uploadSub:  { fontSize: 12, color: '#4b5563', marginTop: 4 },
-  imageError: { fontSize: 12, color: '#dc2626', marginTop: 6, textAlign: 'center' },
-  preview:    { width: '100%', borderRadius: 10, marginTop: 12, maxHeight: 200, objectFit: 'cover' },
-  analyzeBtn: { background: 'linear-gradient(135deg, #2563eb, #0ea5e9)', border: 'none', borderRadius: 14, padding: '16px 24px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: 'Heebo, sans-serif', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' },
-  loadingBox: { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-  spinner:    { width: 32, height: 32, border: '3px solid #e5e7eb', borderTop: '3px solid #2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 8 },
-  loadingStep:{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#4b5563' },
-  dot:        { width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' },
+  container: {
+    display: 'flex', flexDirection: 'column',
+    gap: 16, padding: '24px 16px 80px',
+  },
+
+  hero: {
+    background: 'var(--primary)',
+    borderRadius: 16,
+    padding: '20px 24px',
+    color: 'var(--primary-foreground)',
+    display: 'flex', flexDirection: 'column', gap: 6,
+    position: 'relative', overflow: 'hidden',
+  },
+  heroLabel: {
+    fontSize: 11, fontWeight: 700,
+    letterSpacing: '0.08em', opacity: 0.72,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: 22, fontWeight: 800,
+    letterSpacing: '-0.02em', lineHeight: 1.15,
+  },
+  heroSub: {
+    fontSize: 13, opacity: 0.75, fontWeight: 500,
+    lineHeight: 1.5, marginTop: 4,
+  },
+
+  card: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    boxShadow: '0 2px 8px rgba(28,25,23,0.04)',
+  },
+  cardHeader: {
+    display: 'flex', alignItems: 'flex-start', gap: 12,
+    padding: '16px 24px 12px',
+    borderBottom: '1px solid var(--muted)',
+  },
+  stepNum: {
+    fontFamily: 'var(--font-heading)',
+    width: 32, height: 32, borderRadius: '50%',
+    background: 'var(--primary)', color: 'var(--primary-foreground)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 14.5, fontWeight: 700, flexShrink: 0,
+  },
+  cardTitle: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: 15.5, fontWeight: 700, color: 'var(--foreground)',
+    letterSpacing: '-0.01em', lineHeight: 1.2,
+  },
+  cardSub: { fontSize: 13, color: 'var(--muted-foreground)', marginTop: 3, lineHeight: 1.4 },
+  cardBody: { padding: '16px 24px 24px' },
+
+  stepConnector: { display: 'flex', paddingRight: 40, height: 4, margin: '-8px 0' },
+  stepConnectorLine: {
+    width: 2, height: 24,
+    backgroundImage: 'repeating-linear-gradient(to bottom, rgb(var(--primary-rgb)) 0 6px, transparent 6px 13px)',
+    backgroundSize: '2px 26px',
+    animation: 'trampit-dash 1.6s linear infinite',
+  },
+
+  inputRow:  { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+  inputGroup:{ display: 'flex', flexDirection: 'column', gap: 8 },
+  label: {
+    fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+    display: 'flex', alignItems: 'center', gap: 6,
+    letterSpacing: '0.03em',
+  },
+  lblDot: { width: 6, height: 6, borderRadius: '50%', flexShrink: 0 },
+
+  analyzeBtn: {
+    background: 'var(--foreground)',
+    border: 'none', borderRadius: 12,
+    padding: '16px 24px',
+    color: 'var(--background)', fontSize: 15.5, fontWeight: 700,
+    cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: 12, fontFamily: 'var(--font-heading)',
+    width: '100%',
+    letterSpacing: '-0.01em',
+    transition: 'opacity 0.15s',
+  },
+  analyzeBtnLeft: {
+    display: 'flex', alignItems: 'center', gap: 10,
+  },
+
+  loadingBox: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: '20px 24px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: 16, boxShadow: '0 2px 8px rgba(28,25,23,0.04)',
+  },
+  spinner: {
+    width: 28, height: 28,
+    border: '2.5px solid var(--border)',
+    borderTop: '2.5px solid var(--primary)',
+    borderRadius: '50%',
+    animation: 'trampit-spin 0.75s linear infinite',
+  },
+  loadingSteps: { display: 'flex', flexDirection: 'column', gap: 10, width: '100%' },
+  loadingStep: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    fontSize: 13, color: 'var(--muted-foreground)',
+  },
+  dot: {
+    width: 6, height: 6, borderRadius: '50%',
+    background: 'var(--primary)', flexShrink: 0,
+  },
 };

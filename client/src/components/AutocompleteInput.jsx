@@ -1,4 +1,21 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { IconPin, IconClock } from '../icons.jsx';
+
+// ציונים לפי גודל עיר / חשיבות תחבורתית — שאר הערים מקבלות 1
+const W = {
+  "תל אביב-יפו":100,"ירושלים":100,"חיפה":95,"באר שבע":90,
+  "פתח תקווה":75,"ראשון לציון":75,"נתניה":70,"אשדוד":70,
+  "אשקלון":65,"בני ברק":65,"רחובות":62,"בת ים":60,
+  "רמת גן":58,"חולון":55,"הרצליה":55,"כפר סבא":52,
+  "מודיעין":50,"מודיעין עילית":48,"ראש העין":48,"לוד":45,
+  "רמלה":45,"נהריה":44,"עכו":43,"טבריה":42,"ירוחם":40,
+  "קריית גת":38,"קריית שמונה":37,"דימונה":36,"ערד":35,
+  "אופקים":34,"שדרות":33,"נתיבות":32,"קריית מוצקין":32,
+  "קריית ביאליק":31,"קריית ים":30,"קריית אתא":30,
+  "קריית מלאכי":28,"מגדל העמק":27,"עפולה":27,"בית שמש":26,
+  "מעלות-תרשיחא":25,"צפת":25,"קצרין":24,"יבנה":23,
+  "ריינה":20,"סח'נין":20,"טירת כרמל":20,"קריית אונו":20,
+};
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -30,7 +47,15 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
   const filtered = useMemo(() => {
     const q = debouncedValue.trim();
     if (q.length < 1) return [];
-    return cities.filter(c => c.includes(q)).slice(0, 8);
+    return cities
+      .filter(c => c.includes(q))
+      .sort((a, b) => {
+        // prefix match קודם, אחר כך לפי משקל פופולריות, אחר כך אלפבית
+        const aScore = (a.startsWith(q) ? 10000 : 0) + (W[a] || 1);
+        const bScore = (b.startsWith(q) ? 10000 : 0) + (W[b] || 1);
+        return bScore - aScore || a.localeCompare(b, 'he');
+      })
+      .slice(0, 8);
   }, [debouncedValue, cities]);
 
   useEffect(() => { setHighlighted(0); }, [value]);
@@ -115,7 +140,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
             type="button"
             title="מיקום נוכחי"
           >
-            📍
+            <IconPin size={17} />
           </button>
         )}
       </div>
@@ -127,7 +152,9 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
               style={{ ...s.item, ...s.locItem }}
               onPointerDown={handleLocationClick}
             >
-              {locLoading ? '⏳ מאתר מיקום...' : '📍 השתמש במיקום הנוכחי'}
+              {locLoading
+                ? <><IconClock size={14} /> מאתר מיקום...</>
+                : <><IconPin size={14} /> השתמש במיקום הנוכחי</>}
             </li>
           )}
           {filtered.map((city, i) => (
@@ -137,7 +164,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, cities
               onPointerEnter={() => setHighlighted(i)}
               onPointerDown={e => { e.preventDefault(); onChange(city); setOpen(false); }}
             >
-              📍 {city}
+              <IconPin size={13} style={{ color: 'var(--muted-foreground)' }} /> {city}
             </li>
           ))}
         </ul>
@@ -150,13 +177,13 @@ const s = {
   wrap:     { position: 'relative', width: '100%' },
   inputWrap:{ position: 'relative', display: 'flex', alignItems: 'center' },
   input: {
-    background: '#ffffff',
-    border: '1px solid #d1d5db',
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
     borderRadius: 10,
     padding: '12px 44px 12px 14px',
-    color: '#1f2937',
+    color: 'var(--foreground)',
     fontSize: 15,
-    fontFamily: 'Heebo, sans-serif',
+    fontFamily: 'var(--font-body)',
     direction: 'rtl',
     outline: 'none',
     width: '100%',
@@ -177,8 +204,8 @@ const s = {
     top: 'calc(100% + 4px)',
     right: 0,
     left: 0,
-    background: '#ffffff',
-    border: '1px solid #d1d5db',
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
     borderRadius: 10,
     listStyle: 'none',
     margin: 0,
@@ -189,21 +216,22 @@ const s = {
     boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
   },
   item: {
+    display: 'flex', alignItems: 'center', gap: 8,
     padding: '13px 14px',
     fontSize: 15,
-    color: '#1f2937',
+    color: 'var(--foreground)',
     cursor: 'pointer',
-    borderBottom: '1px solid #f3f4f6',
+    borderBottom: '1px solid var(--muted)',
     direction: 'rtl',
     touchAction: 'manipulation',
   },
   locItem: {
-    color: '#2563eb',
+    color: 'var(--primary)',
     fontWeight: 600,
-    background: 'rgba(37,99,235,0.04)',
+    background: 'rgba(var(--primary-rgb),0.05)',
   },
   itemHighlighted: {
-    background: 'rgba(37,99,235,0.08)',
-    color: '#2563eb',
+    background: 'rgba(var(--primary-rgb),0.08)',
+    color: 'var(--primary)',
   },
 };

@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet-rotate';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { IconPin, IconBus, IconNavigation, IconTarget, IconCompass } from '../icons.jsx';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -35,14 +36,14 @@ function makeUserIcon(heading) {
   // קצה ימני (+30°): x=42, y=9.2
   const cone = hasCone
     ? `<path d="M30,30 L18,9 A24,24,0,0,1,42,9 Z"
-         fill="rgba(59,130,246,0.30)" stroke="rgba(59,130,246,0.75)"
+         fill="rgba(var(--primary-rgb),0.30)" stroke="rgba(var(--primary-rgb),0.75)"
          stroke-width="1.5" stroke-linejoin="round"/>`
     : '';
   return L.divIcon({
     html: `<div style="width:60px;height:60px;transform:rotate(${rot}deg);transform-origin:30px 30px">
       <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
         ${cone}
-        <circle cx="30" cy="30" r="10" fill="#ef4444" stroke="white" stroke-width="3"/>
+        <circle cx="30" cy="30" r="10" fill="var(--destructive)" stroke="white" stroke-width="3"/>
       </svg>
     </div>`,
     className: '',
@@ -52,9 +53,9 @@ function makeUserIcon(heading) {
   });
 }
 
-const spotIcon     = circleIcon('#2563eb', 18);
-const verifiedIcon = circleIcon('#059669', 16);
-const autoIcon     = circleIcon('#6b7280', 12);
+const spotIcon     = circleIcon('var(--primary)', 18);
+const verifiedIcon = circleIcon('var(--accent)', 16);
+const autoIcon     = circleIcon('var(--muted-foreground)', 12);
 
 function FirstCenter({ gps }) {
   const map = useMap();
@@ -203,12 +204,12 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
             <Circle
               center={gpsPos}
               radius={Math.max(gps.accuracy, 10)}
-              pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.1, weight: 1.5, dashArray: '5' }}
+              pathOptions={{ color: 'var(--destructive)', fillColor: 'var(--destructive)', fillOpacity: 0.1, weight: 1.5, dashArray: '5' }}
             />
             <Marker position={gpsPos} icon={userIcon}>
               <Popup>
                 <div style={p.wrap}>
-                  <b>📍 המיקום שלך</b>
+                  <b style={p.titleRow}><IconPin size={13} style={{ color: 'var(--primary)' }} /> המיקום שלך</b>
                   <div style={p.sub}>דיוק: ~{Math.round(gps.accuracy)}מ׳</div>
                   {heading !== null && <div style={p.sub}>כיוון: {heading}°</div>}
                 </div>
@@ -228,10 +229,10 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
                     : pt.currentRoad > 0 && <div style={p.row}>כביש: {pt.currentRoad}</div>
                   }
                   {pt.servedDestinations?.length > 0 && (
-                    <div style={{ ...p.row, color: '#2563eb' }}>→ {pt.servedDestinations.slice(0, 3).join(' · ')}</div>
+                    <div style={{ ...p.row, color: 'var(--primary)' }}>→ {pt.servedDestinations.slice(0, 3).join(' · ')}</div>
                   )}
                   {pt.activeBusLinesCount > 0 && (
-                    <div style={{ ...p.row, color: '#059669' }}>🚌 {pt.activeBusLinesCount} קווים פעילים</div>
+                    <div style={{ ...p.row, ...p.rowIcon, color: 'var(--accent)' }}><IconBus size={12} /> {pt.activeBusLinesCount} קווים פעילים</div>
                   )}
                 </div>
               </Popup>
@@ -255,30 +256,32 @@ export default function MapComponent({ spots = [], points = [], onBoundsChange }
       {/* כפתור מצפן — מאפס לצפון כשהמפה מסובבת */}
       {bearing !== 0 && (
         <button style={st.compassBtn} onClick={() => mapRef.current?.setBearing(0)} title="אפס לצפון">
-          <span style={{ display: 'inline-block', transform: `rotate(${-bearing}deg)`, fontSize: 18, lineHeight: 1 }}>🧭</span>
+          <span style={{ display: 'inline-block', transform: `rotate(${-bearing}deg)` }}>
+            <IconCompass size={17} style={{ color: 'var(--foreground)' }} />
+          </span>
         </button>
       )}
 
       {/* כפתור הרשאת כיוון — iOS בלבד */}
       {iosNeedsPerm && (
         <button style={st.headingBtn} onClick={requestHeadingPerm} title="הפעל כיוון מבט">
-          📡
+          <IconNavigation size={16} style={{ color: 'var(--foreground)' }} />
         </button>
       )}
 
       {/* כפתור חזור אליי */}
       {gps && (
         <button style={st.centerBtn} onClick={() => setFlyTrigger(t => t + 1)} title="חזור למיקום שלי">
-          🎯
+          <IconTarget size={16} style={{ color: 'var(--foreground)' }} />
         </button>
       )}
 
       {/* מקרא */}
       <div style={st.legend}>
-        <span style={st.legendItem}><span style={{ ...st.dot, background: '#ef4444' }} />אתה</span>
-        <span style={st.legendItem}><span style={{ ...st.dot, background: '#059669' }} />מאומת</span>
-        <span style={st.legendItem}><span style={{ ...st.dot, background: '#6b7280' }} />אוטומטי</span>
-        <span style={st.legendItem}><span style={{ ...st.dot, background: '#2563eb' }} />קהילה</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: 'var(--destructive)' }} />אתה</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: 'var(--accent)' }} />מאומת</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: 'var(--muted-foreground)' }} />אוטומטי</span>
+        <span style={st.legendItem}><span style={{ ...st.dot, background: 'var(--primary)' }} />קהילה</span>
       </div>
     </div>
   );
@@ -290,48 +293,53 @@ const st = {
     position: 'absolute', inset: 0, zIndex: 1000,
     background: 'rgba(13,15,20,0.7)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 15, color: '#f0f2f7',
+    fontSize: 15, color: 'var(--muted)',
   },
   compassBtn: {
     position: 'absolute', top: 44, right: 10, zIndex: 1000,
-    background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
-    borderRadius: 4, width: 34, height: 34,
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 10, width: 36, height: 36,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
+    cursor: 'pointer', boxShadow: 'var(--shadow-md)', padding: 0,
     touchAction: 'manipulation',
   },
   headingBtn: {
-    position: 'absolute', top: 84, right: 10, zIndex: 1000,
-    background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
-    borderRadius: 4, width: 34, height: 34,
+    position: 'absolute', top: 86, right: 10, zIndex: 1000,
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 10, width: 36, height: 36,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 17, cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
+    cursor: 'pointer',
+    boxShadow: 'var(--shadow-md)', padding: 0,
     touchAction: 'manipulation',
   },
   centerBtn: {
-    position: 'absolute', top: 124, right: 10, zIndex: 1000,
-    background: '#fff', border: '2px solid rgba(0,0,0,0.2)',
-    borderRadius: 4, width: 34, height: 34,
+    position: 'absolute', top: 128, right: 10, zIndex: 1000,
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 10, width: 36, height: 36,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 17, cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.2)', padding: 0,
+    cursor: 'pointer',
+    boxShadow: 'var(--shadow-md)', padding: 0,
     touchAction: 'manipulation',
   },
   legend: {
     position: 'absolute', bottom: 10, left: 10, zIndex: 1000,
-    background: 'rgba(255,255,255,0.93)',
-    borderRadius: 8, padding: '5px 10px',
-    display: 'flex', gap: 10, fontSize: 11, color: '#1f2937',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+    display: 'flex', gap: 6, flexWrap: 'wrap',
   },
-  legendItem: { display: 'flex', alignItems: 'center', gap: 4 },
-  dot: { width: 9, height: 9, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
+  legendItem: {
+    display: 'flex', alignItems: 'center', gap: 5,
+    background: 'var(--card)', border: '1px solid var(--border)',
+    borderRadius: 999, padding: '5px 10px',
+    fontSize: 11, fontWeight: 600, color: 'var(--foreground)',
+    boxShadow: 'var(--shadow-sm)',
+  },
+  dot: { width: 8, height: 8, borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
 };
 
 const p = {
-  wrap:  { direction: 'rtl', textAlign: 'right', minWidth: 155 },
-  title: { fontWeight: 700, fontSize: 14, marginBottom: 4, color: '#111' },
-  row:   { fontSize: 12, color: '#4b5563', marginBottom: 2 },
-  sub:   { fontSize: 11, color: '#9ca3af', marginTop: 3 },
+  wrap:  { direction: 'rtl', textAlign: 'right', minWidth: 155, fontFamily: 'var(--font-body)' },
+  titleRow: { display: 'flex', alignItems: 'center', gap: 5 },
+  title: { fontWeight: 700, fontSize: 14, marginBottom: 4, color: 'var(--foreground)' },
+  row:   { fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 2 },
+  rowIcon: { display: 'flex', alignItems: 'center', gap: 4 },
+  sub:   { fontSize: 11, color: 'var(--muted-foreground)', marginTop: 3 },
 };

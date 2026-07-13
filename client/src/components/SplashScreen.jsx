@@ -1,33 +1,115 @@
-import { Navigation } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-export default function SplashScreen({ fading = false, message = 'טוען נתונים...' }) {
+function Dots() {
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    const id = setInterval(() => setCount(c => (c % 3) + 1), 480);
+    return () => clearInterval(id);
+  }, []);
+  return <span aria-hidden="true">{'•'.repeat(count)}</span>;
+}
+
+export default function SplashScreen({ fading = false, message = 'מתחבר לשרת...' }) {
   return (
-    <div
-      style={{ transition: 'opacity 0.55s ease' }}
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white ${fading ? 'opacity-0' : 'opacity-100'}`}
-    >
-      {/* Logo with pulse */}
-      <div className="animate-pulse mb-7">
-        <div className="w-24 h-24 rounded-3xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-200">
-          <Navigation size={48} className="text-white" strokeWidth={1.5} />
+    <div style={{ ...s.root, opacity: fading ? 0 : 1 }}>
+
+      <div style={s.iconWrap}>
+        <div style={s.iconPulse} />
+        <div style={s.icon}>
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--primary-foreground)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11" />
+          </svg>
         </div>
       </div>
 
-      {/* Brand name */}
-      <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight leading-none mb-2" style={{ fontFamily: 'Heebo, sans-serif' }}>
-        טרמפ<span className="text-blue-600">יט</span>
-      </h1>
-      <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-14 tracking-wide">
-        v0.2 · BETA
-      </span>
-
-      {/* Spinner + text */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-7 h-7 rounded-full border-2 border-slate-200 border-t-blue-500 animate-spin" />
-        <p className="text-sm text-slate-400 font-medium" style={{ fontFamily: 'Heebo, sans-serif' }}>
-          {message}
-        </p>
+      <div style={s.brand}>
+        טרמפ<span style={s.brandAccent}>יט</span>
       </div>
+      <div style={s.tagline}>ניווט חכם לטרמפיסטים</div>
+
+      <div style={s.bottomBlock}>
+        <div style={s.spinner} />
+        <div style={s.msg}>
+          {message}&nbsp;<Dots />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes trampit-spin { to { transform: rotate(360deg); } }
+        @keyframes trampit-pulse {
+          0%, 100% { transform: scale(1);   opacity: 0.3; }
+          50%       { transform: scale(1.5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
+
+const s = {
+  root: {
+    position: 'absolute', inset: 0, zIndex: 9999,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--background)',
+    fontFamily: 'var(--font-body)',
+    gap: 0,
+    transition: 'opacity 0.55s ease',
+    userSelect: 'none',
+    direction: 'rtl',
+  },
+
+  iconWrap: {
+    position: 'relative',
+    width: 96, height: 96,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    marginBottom: 24,
+  },
+  iconPulse: {
+    position: 'absolute', inset: 0,
+    borderRadius: '30px',
+    background: 'var(--primary)',
+    opacity: 0.2,
+    animation: 'trampit-pulse 2s ease-in-out infinite',
+  },
+  icon: {
+    width: 80, height: 80,
+    borderRadius: '26px',
+    background: 'var(--primary)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 12px 32px rgba(var(--primary-rgb),0.28)',
+  },
+
+  brand: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: 34,
+    fontWeight: 800,
+    color: 'var(--foreground)',
+    letterSpacing: '-0.02em',
+    lineHeight: 1,
+    marginBottom: 6,
+  },
+  brandAccent: { color: 'var(--primary)' },
+  tagline: {
+    fontSize: 13,
+    color: 'var(--muted-foreground)',
+    fontWeight: 500,
+    marginBottom: 56,
+  },
+
+  bottomBlock: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+  },
+  spinner: {
+    width: 26, height: 26,
+    border: '2.5px solid var(--border)',
+    borderTop: '2.5px solid var(--primary)',
+    borderRadius: '50%',
+    animation: 'trampit-spin 0.75s linear infinite',
+  },
+  msg: {
+    fontSize: 13,
+    color: 'var(--muted-foreground)',
+    fontWeight: 500,
+    minWidth: 160,
+    textAlign: 'center',
+  },
+};

@@ -2,12 +2,12 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>טרמפיט</title>
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#FBF7F0" />
     <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- iOS -->
@@ -15,6 +15,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="טרמפיט" />
     <link rel="apple-touch-icon" href="/icon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@700;800&family=Heebo:wght@400;500&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
 
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -28,7 +33,7 @@
         position: fixed;
         inset: 0;
         z-index: 99999;
-        background: #ffffff;
+        background: #FBF7F0;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -40,33 +45,34 @@
       #html-splash .logo-box {
         width: 96px;
         height: 96px;
-        background: #2563eb;
-        border-radius: 28px;
+        background: #C2410C;
+        border-radius: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin-bottom: 28px;
-        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.28);
+        box-shadow: 0 8px 32px rgba(194, 65, 12, 0.28);
         animation: splash-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
       }
 
       #html-splash .brand {
+        font-family: 'Rubik', system-ui, sans-serif;
         font-size: 34px;
         font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.5px;
+        color: #1C1917;
+        letter-spacing: -0.02em;
         margin-bottom: 8px;
         direction: rtl;
       }
 
-      #html-splash .brand span { color: #2563eb; }
+      #html-splash .brand span { color: #C2410C; }
 
       #html-splash .badge {
         font-size: 11px;
         font-weight: 700;
-        color: #2563eb;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        color: #78716C;
+        background: #F5EFE4;
+        border: 1px solid #E7E0D1;
         border-radius: 999px;
         padding: 3px 12px;
         margin-bottom: 52px;
@@ -76,8 +82,8 @@
       #html-splash .spinner {
         width: 28px;
         height: 28px;
-        border: 2.5px solid #e2e8f0;
-        border-top-color: #2563eb;
+        border: 2.5px solid #E7E0D1;
+        border-top-color: #C2410C;
         border-radius: 50%;
         animation: splash-spin 0.8s linear infinite;
         margin-bottom: 12px;
@@ -85,7 +91,7 @@
 
       #html-splash .loading-text {
         font-size: 13px;
-        color: #94a3b8;
+        color: #78716C;
         font-weight: 500;
         direction: rtl;
       }
