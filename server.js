@@ -25,7 +25,7 @@ const app     = express();
 app.set('trust proxy', 1);
 
 // ─── Health check — ללא auth, לזיהוי cold start על Render ───────────────────
-app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now(), v: 3 }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now(), v: 4 }));
 
 const IS_PROD      = process.env.NODE_ENV === 'production';
 const ALLOWED_HOST = process.env.ALLOWED_HOST || null; // למשל: trampit.app
