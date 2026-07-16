@@ -380,8 +380,13 @@ function getMailer() {
   if (!_mailer) {
     const nodemailer = require('nodemailer');
     _mailer = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS.replace(/\s+/g, '') },
+      connectionTimeout: 10000,
+      greetingTimeout:   10000,
+      socketTimeout:     20000,
     });
   }
   return _mailer;
@@ -423,8 +428,8 @@ app.post('/api/forgot', makeRateLimit('login'), express.json({ limit: '1kb' }), 
     });
     res.json(genericOk);
   } catch (err) {
-    console.error('[forgot] send error:', err.message);
-    res.status(500).json({ error: 'שליחת המייל נכשלה — נסה שוב מאוחר יותר' });
+    console.error('[forgot] send error:', err.code, err.message);
+    res.status(500).json({ error: 'שליחת המייל נכשלה — נסה שוב מאוחר יותר', code: err.code || null });
   }
 });
 
