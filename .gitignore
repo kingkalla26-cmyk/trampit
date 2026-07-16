@@ -22,3 +22,8 @@ Thumbs.db
 # IDE
 .vscode/settings.json
 .idea/
+
+# נתוני runtime — נשמרים ב-Postgres (או קבצים מקומיים), לא ב-git
+data/sessions.json
+data/votes.json
+spots.json

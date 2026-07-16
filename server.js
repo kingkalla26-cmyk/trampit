@@ -19,6 +19,7 @@ function loadTrampitDb() {
 }
 const { evaluateRouteDecision } = require('./data/evaluateRouteDecision');
 const { destinationMatchesCity } = require('./data/normalizeCity');
+const store = require('./data/store');
 const app     = express();
 
 app.set('trust proxy', 1);
@@ -146,41 +147,22 @@ const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toStri
 const APP_PASSWORD  = process.env.APP_PASSWORD  || null;
 const COOKIE_NAME   = 'trampit_sid';
 const SESSION_TTL   = 24 * 60 * 60 * 1000;
-const SESSIONS_FILE = path.join(__dirname, 'data', 'sessions.json');
 
 const sessions = new Map();
 
-// טעינת sessions שמורים מקובץ בהפעלה
-(function loadPersistedSessions() {
-  try {
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
-      const now  = Date.now();
-      let loaded = 0;
-      for (const [token, exp] of Object.entries(data)) {
-        if (exp > now) { sessions.set(token, exp); loaded++; }
-      }
-      if (loaded > 0) console.log(`[sessions] loaded ${loaded} active sessions`);
-    }
-  } catch { /* קובץ פגום — מתחיל מחדש */ }
-})();
-
-// שמירה לקובץ (debounced — 500ms אחרי השינוי האחרון)
-let _saveTimer = null;
-function persistSessions() {
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    try {
-      fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions)), 'utf8');
-    } catch (e) { console.error('[sessions] save error:', e.message); }
-  }, 500);
+// טעינת sessions שמורים (store — Postgres או קובץ) בהפעלה; נקרא אחרי store.init()
+function loadPersistedSessions() {
+  const data = store.get('sessions', {});
+  const now  = Date.now();
+  let loaded = 0;
+  for (const [token, exp] of Object.entries(data)) {
+    if (exp > now) { sessions.set(token, exp); loaded++; }
+  }
+  if (loaded > 0) console.log(`[sessions] loaded ${loaded} active sessions`);
 }
 
-// שמירה סינכרונית לפני יציאה
-function flushSessionsSync() {
-  try {
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(sessions)), 'utf8');
-  } catch {}
+function persistSessions() {
+  store.set('sessions', Object.fromEntries(sessions));
 }
 
 function issueSession(res) {
@@ -497,19 +479,12 @@ Rules:
 });
 
 // ─── /api/vote — הצבעות קהילה על נקודות טרמפ ────────────────────────────────
-const VOTES_FILE = path.join(__dirname, 'data', 'votes.json');
-let votesCache = null;
-
 function loadVotes() {
-  if (votesCache) return votesCache;
-  try { votesCache = JSON.parse(fs.readFileSync(VOTES_FILE, 'utf8')); }
-  catch { votesCache = {}; }
-  return votesCache;
+  return store.get('votes', {});
 }
 
 function saveVotes(v) {
-  votesCache = v;
-  try { fs.writeFileSync(VOTES_FILE, JSON.stringify(v), 'utf8'); } catch {}
+  store.set('votes', v);
 }
 
 // GET — מחזיר ספירות להצבעות לפי keys (ללא IPs)
@@ -545,19 +520,12 @@ app.post('/api/vote', makeRateLimit('confirmSpot'), express.json({ limit: '512b'
 });
 
 // ─── /api/spots — נקודות טרמפ קהילתיות ─────────────────────────────────────
-const SPOTS_FILE = path.join(__dirname, 'spots.json');
-let spotsCache = null;
-
 function loadSpots() {
-  if (spotsCache) return spotsCache;
-  try { spotsCache = JSON.parse(fs.readFileSync(SPOTS_FILE, 'utf8')); }
-  catch { spotsCache = []; }
-  return spotsCache;
+  return store.get('spots', []);
 }
 
 function saveSpots(spots) {
-  spotsCache = spots;
-  fs.writeFileSync(SPOTS_FILE, JSON.stringify(spots, null, 2), 'utf8');
+  store.set('spots', spots);
 }
 
 const VALID_SPOT_TEXT  = /^[֐-׿a-zA-Z0-9 \-'.,\/]{2,60}$/;
@@ -1760,12 +1728,21 @@ app.get('*', (req, res) => {
 Sentry.setupExpressErrorHandler(app);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Trampit server running on port ${PORT}`));
+store.init().then(() => {
+  loadPersistedSessions();
+  app.listen(PORT, () => console.log(`Trampit server running on port ${PORT}`));
+});
 
 // ─── Graceful shutdown + crash handlers ──────────────────────────────────────
+let _exiting = false;
 function gracefulExit(code) {
-  flushSessionsSync();
-  process.exit(code);
+  if (_exiting) return;
+  _exiting = true;
+  persistSessions();
+  Promise.race([
+    store.flush(),
+    new Promise(r => setTimeout(r, 3000)),
+  ]).finally(() => process.exit(code));
 }
 
 // שגיאה לא-מטופלת — שולח ל-Sentry, שומר sessions ויוצא
