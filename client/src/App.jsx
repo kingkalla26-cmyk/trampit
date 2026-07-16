@@ -6,7 +6,7 @@ import MapPage               from './pages/MapPage.jsx';
 import RidePage              from './pages/RidePage.jsx';
 import JunctionCardDemo      from './pages/JunctionCardDemo.jsx';
 import ErrorBoundary         from './components/ErrorBoundary.jsx';
-import LoginScreen           from './components/LoginScreen.jsx';
+import AuthScreen            from './components/AuthScreen.jsx';
 import SplashScreen          from './components/SplashScreen.jsx';
 import { JunctionProvider }  from './components/JunctionProvider.jsx';
 
@@ -68,7 +68,14 @@ export default function App() {
 
       {authed !== null && (
         authed === false
-          ? <LoginScreen onLogin={() => setAuthed(true)} />
+          ? <AuthScreen onLogin={() => {
+              setAuthed(true);
+              // רשימת הערים המלאה לא נטענה כשלא היינו מחוברים — נטען עכשיו
+              fetch('/api/cities', { credentials: 'include' })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => Array.isArray(d) && d.length > 0 && setCities(d))
+                .catch(() => {});
+            }} />
           : <ErrorBoundary>
               <Routes>
                 <Route path="/"     element={<SearchPage cities={cities} />} />

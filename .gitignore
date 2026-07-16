@@ -26,4 +26,5 @@ Thumbs.db
 # נתוני runtime — נשמרים ב-Postgres (או קבצים מקומיים), לא ב-git
 data/sessions.json
 data/votes.json
+data/users.json
 spots.json

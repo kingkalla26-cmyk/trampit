@@ -141,22 +141,25 @@ function makeRateLimit(tier) {
   };
 }
 
-// ─── Session auth ─────────────────────────────────────────────────────────────
+// ─── Session auth + user accounts ────────────────────────────────────────────
 const crypto        = require('crypto');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toString('hex');
-const APP_PASSWORD  = process.env.APP_PASSWORD  || null;
 const COOKIE_NAME   = 'trampit_sid';
-const SESSION_TTL   = 24 * 60 * 60 * 1000;
+const SESSION_TTL   = 30 * 24 * 60 * 60 * 1000; // 30 יום — חשבונות אישיים, לא מנתקים כל יום
+const ADMIN_EMAILS  = (process.env.ADMIN_EMAILS || 'kingkalla26@gmail.com')
+  .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
-const sessions = new Map();
+const sessions = new Map(); // token → { exp, email }
 
 // טעינת sessions שמורים (store — Postgres או קובץ) בהפעלה; נקרא אחרי store.init()
 function loadPersistedSessions() {
   const data = store.get('sessions', {});
   const now  = Date.now();
   let loaded = 0;
-  for (const [token, exp] of Object.entries(data)) {
-    if (exp > now) { sessions.set(token, exp); loaded++; }
+  for (const [token, val] of Object.entries(data)) {
+    // תאימות לאחור: בגרסה הקודמת הערך היה מספר (exp בלבד, ללא משתמש)
+    const sess = typeof val === 'number' ? { exp: val, email: null } : val;
+    if (sess.exp > now) { sessions.set(token, sess); loaded++; }
   }
   if (loaded > 0) console.log(`[sessions] loaded ${loaded} active sessions`);
 }
@@ -165,10 +168,26 @@ function persistSessions() {
   store.set('sessions', Object.fromEntries(sessions));
 }
 
-function issueSession(res) {
+// ─── Users ────────────────────────────────────────────────────────────────────
+function loadUsers() {
+  return store.get('users', {});
+}
+
+function saveUsers(users) {
+  store.set('users', users);
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
+const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const USERNAME_RE = /^[֐-׿a-zA-Z0-9 _.\-]{2,30}$/;
+
+function issueSession(res, email) {
   const token = crypto.randomBytes(24).toString('hex');
   const sig   = crypto.createHmac('sha256', COOKIE_SECRET).update(token).digest('hex');
-  sessions.set(token, Date.now() + SESSION_TTL);
+  sessions.set(token, { exp: Date.now() + SESSION_TTL, email: email || null });
   persistSessions();
   res.cookie(COOKIE_NAME, `${token}.${sig}`, {
     httpOnly: true,
@@ -178,47 +197,113 @@ function issueSession(res) {
   });
 }
 
+// מחזיר את ה-session ({ exp, email }) או null
 function validateSession(req) {
-  if (!APP_PASSWORD) return true;
   const raw = req.headers.cookie?.match(new RegExp(`${COOKIE_NAME}=([^;]+)`))?.[1];
-  if (!raw) return false;
+  if (!raw) return null;
   const dotIdx = raw.lastIndexOf('.');
-  if (dotIdx === -1) return false;
+  if (dotIdx === -1) return null;
   const token = raw.slice(0, dotIdx);
   const sig   = raw.slice(dotIdx + 1);
   const expected = crypto.createHmac('sha256', COOKIE_SECRET).update(token).digest('hex');
   try {
-    if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return false;
-  } catch { return false; }
-  const exp = sessions.get(token);
-  return exp && Date.now() < exp;
+    if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
+  } catch { return null; }
+  const sess = sessions.get(token);
+  return (sess && Date.now() < sess.exp) ? sess : null;
 }
 
 setInterval(() => {
   const now = Date.now();
-  for (const [token, exp] of sessions) {
-    if (now > exp) sessions.delete(token);
+  for (const [token, sess] of sessions) {
+    if (now > sess.exp) sessions.delete(token);
   }
   persistSessions();
 }, 60 * 60 * 1000);
 
 function requireAuth(req, res, next) {
-  if (!validateSession(req)) {
+  const sess = validateSession(req);
+  if (!sess) {
     secLog('UNAUTH', req);
     return res.status(401).json({ error: 'נדרשת התחברות', loginRequired: true });
+  }
+  req.userEmail = sess.email;
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  const sess = validateSession(req);
+  if (!sess || !sess.email || !ADMIN_EMAILS.includes(sess.email)) {
+    secLog('ADMIN_DENY', req);
+    return res.status(403).json({ error: 'אין הרשאה' });
   }
   next();
 }
 
-app.post('/api/login', makeRateLimit('login'), (req, res) => {
-  const { password } = req.body || {};
-  if (!APP_PASSWORD) return res.json({ ok: true });
-  if (!password || password !== APP_PASSWORD) {
-    secLog('LOGIN_FAIL', req);
-    return res.status(401).json({ error: 'סיסמה שגויה' });
+// ─── /api/register — יצירת חשבון חדש ────────────────────────────────────────
+app.post('/api/register', makeRateLimit('login'), express.json({ limit: '2kb' }), (req, res) => {
+  const { email, username, password } = req.body || {};
+
+  const emailNorm = String(email || '').trim().toLowerCase();
+  const nameNorm  = String(username || '').trim();
+
+  if (!EMAIL_RE.test(emailNorm) || emailNorm.length > 100)
+    return res.status(400).json({ error: 'כתובת אימייל לא תקינה' });
+  if (!USERNAME_RE.test(nameNorm))
+    return res.status(400).json({ error: 'שם משתמש: 2–30 תווים (אותיות, מספרים, רווח)' });
+  if (typeof password !== 'string' || password.length < 6 || password.length > 100)
+    return res.status(400).json({ error: 'סיסמה: לפחות 6 תווים' });
+
+  const users = loadUsers();
+  if (users[emailNorm]) {
+    return res.status(409).json({ error: 'כתובת האימייל כבר רשומה — נסה להתחבר' });
   }
-  issueSession(res);
-  res.json({ ok: true });
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  users[emailNorm] = {
+    email:     emailNorm,
+    username:  nameNorm,
+    salt,
+    passHash:  hashPassword(password, salt),
+    createdAt: new Date().toISOString(),
+  };
+  saveUsers(users);
+
+  issueSession(res, emailNorm);
+  console.log(`[users] registered: ${emailNorm}`);
+  res.json({ ok: true, username: nameNorm, email: emailNorm });
+});
+
+// ─── /api/login — התחברות עם חשבון קיים ─────────────────────────────────────
+app.post('/api/login', makeRateLimit('login'), (req, res) => {
+  const { email, password } = req.body || {};
+  const emailNorm = String(email || '').trim().toLowerCase();
+
+  const user = loadUsers()[emailNorm];
+  if (!user || typeof password !== 'string') {
+    secLog('LOGIN_FAIL', req);
+    return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
+  }
+
+  const attempted = hashPassword(password, user.salt);
+  let match = false;
+  try {
+    match = crypto.timingSafeEqual(Buffer.from(attempted, 'hex'), Buffer.from(user.passHash, 'hex'));
+  } catch {}
+  if (!match) {
+    secLog('LOGIN_FAIL', req);
+    return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
+  }
+
+  issueSession(res, emailNorm);
+  res.json({ ok: true, username: user.username, email: user.email });
+});
+
+// ─── /api/me — פרטי המשתמש המחובר ───────────────────────────────────────────
+app.get('/api/me', requireAuth, (req, res) => {
+  if (!req.userEmail) return res.json({ email: null, username: null });
+  const user = loadUsers()[req.userEmail];
+  res.json({ email: req.userEmail, username: user?.username || null });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -601,7 +686,7 @@ app.post('/api/spots/:id/confirm', makeRateLimit('confirmSpot'), (req, res) => {
 });
 
 // ─── /api/spots/:id/approve — אישור ידני על ידי אדמין ───────────────────────
-app.post('/api/spots/:id/approve', requireAuth, (req, res) => {
+app.post('/api/spots/:id/approve', requireAdmin, (req, res) => {
   const spots = loadSpots();
   const spot  = spots.find(s => s.id === req.params.id);
   if (!spot) return res.status(404).json({ error: 'נקודה לא נמצאה' });
@@ -611,7 +696,7 @@ app.post('/api/spots/:id/approve', requireAuth, (req, res) => {
 });
 
 // ─── DELETE /api/spots/:id — מחיקה על ידי אדמין ─────────────────────────────
-app.delete('/api/spots/:id', requireAuth, (req, res) => {
+app.delete('/api/spots/:id', requireAdmin, (req, res) => {
   const spots = loadSpots();
   const idx   = spots.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'נקודה לא נמצאה' });
