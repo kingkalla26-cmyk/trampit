@@ -147,7 +147,7 @@ const crypto        = require('crypto');
 const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32).toString('hex');
 const COOKIE_NAME   = 'trampit_sid';
 const SESSION_TTL   = 30 * 24 * 60 * 60 * 1000; // 30 יום — חשבונות אישיים, לא מנתקים כל יום
-const ADMIN_EMAILS  = (process.env.ADMIN_EMAILS || 'kingkalla26@gmail.com')
+const ADMIN_EMAILS  = (process.env.ADMIN_EMAILS || 'kingkalla26@gmail.com,trempit01@gmail.com')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 const sessions = new Map(); // token → { exp, email }
@@ -891,7 +891,7 @@ app.get('/api/geocode', requireAuth, makeRateLimit('cities'), async (req, res) =
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1&accept-language=he`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com', 'Accept-Language': 'he' },
+      { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com', 'Accept-Language': 'he' },
         signal: AbortSignal.timeout(8000) }
     );
     const data = await response.json();
@@ -1090,7 +1090,7 @@ app.get('/api/route/plan', requireAuth, makeRateLimit('decision'), async (req, r
   try {
     const geoRes  = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(dest + ', ישראל')}&format=json&limit=1&countrycodes=il`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' }, signal: AbortSignal.timeout(8000) }
+      { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' }, signal: AbortSignal.timeout(8000) }
     );
     const geoData = await geoRes.json();
     if (!geoData?.length) return res.status(404).json({ error: `לא נמצאה כתובת: "${dest}"` });
@@ -1215,7 +1215,7 @@ app.get('/api/route/options', requireAuth, makeRateLimit('decision'), async (req
   async function geocodePlace(place) {
     const r = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place + ', ישראל')}&format=json&limit=1&countrycodes=il`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' }, signal: AbortSignal.timeout(8000) }
+      { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' }, signal: AbortSignal.timeout(8000) }
     );
     const d = await r.json();
     if (!d?.length) throw new Error(`לא נמצאה כתובת: "${place}"`);
@@ -1383,7 +1383,7 @@ app.get('/api/route/exits', requireAuth, makeRateLimit('decision'), async (req, 
   async function geocodePlace(place) {
     const r = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place + ', ישראל')}&format=json&limit=1&countrycodes=il`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' }, signal: AbortSignal.timeout(8000) }
+      { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' }, signal: AbortSignal.timeout(8000) }
     );
     const d = await r.json();
     if (!d?.length) throw new Error(`לא נמצאה כתובת: "${place}"`);
@@ -1405,7 +1405,7 @@ app.get('/api/route/exits', requireAuth, makeRateLimit('decision'), async (req, 
   try {
     const dr = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destination + ', ישראל')}&format=json&limit=1&countrycodes=il&addressdetails=1`,
-      { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' }, signal: AbortSignal.timeout(8000) }
+      { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' }, signal: AbortSignal.timeout(8000) }
     );
     const dd = await dr.json();
     if (dd?.length) {
@@ -1769,7 +1769,7 @@ app.get('/api/transit', requireAuth, makeRateLimit('transit'), async (req, res) 
         if (hasCoords) {
           const geo = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${coordLat}&lon=${coordLng}&format=json&zoom=10&accept-language=he`,
-            { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' }, signal: AbortSignal.timeout(7000) }
+            { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' }, signal: AbortSignal.timeout(7000) }
           ).then(r => r.json()).catch(() => null);
           const geocity = geo?.address?.city || geo?.address?.town || geo?.address?.village || geo?.address?.county;
           if (geocity) {

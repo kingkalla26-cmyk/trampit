@@ -1,7 +1,7 @@
 const dest = 'יד רמבם, ישראל';
 fetch(
   `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(dest)}&format=json&limit=1&countrycodes=il&addressdetails=1`,
-  { headers: { 'User-Agent': 'TrampitApp/1.0 kingkalla26@gmail.com' } }
+  { headers: { 'User-Agent': 'TrampitApp/1.0 trempit01@gmail.com' } }
 )
   .then(r => r.json())
   .then(d => {
