@@ -69,11 +69,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'", "'unsafe-inline'"],
-      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      scriptSrc:  ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/client'],
+      styleSrc:   ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://accounts.google.com/gsi/style'],
       fontSrc:    ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc:     ["'self'", 'data:', 'https://*.tile.openstreetmap.org', 'https://unpkg.com'],
-      connectSrc: ["'self'"],
+      imgSrc:     ["'self'", 'data:', 'https://*.tile.openstreetmap.org', 'https://server.arcgisonline.com', 'https://unpkg.com'],
+      connectSrc: ["'self'", 'https://accounts.google.com/gsi/'],
+      frameSrc:   ['https://accounts.google.com/gsi/'],
     },
   },
 }));
@@ -284,6 +285,9 @@ app.post('/api/login', makeRateLimit('login'), (req, res) => {
     secLog('LOGIN_FAIL', req);
     return res.status(401).json({ error: 'אימייל או סיסמה שגויים' });
   }
+  if (!user.passHash) {
+    return res.status(401).json({ error: 'החשבון הזה נוצר עם Google — התחבר עם כפתור Google' });
+  }
 
   const attempted = hashPassword(password, user.salt);
   let match = false;
@@ -309,6 +313,143 @@ app.get('/api/me', requireAuth, (req, res) => {
 app.post('/api/logout', (req, res) => {
   res.clearCookie(COOKIE_NAME);
   res.json({ ok: true });
+});
+
+// ─── /api/config — הגדרות ציבוריות לקליינט ───────────────────────────────────
+app.get('/api/config', (req, res) => {
+  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || null });
+});
+
+// ─── /api/auth/google — התחברות/הרשמה עם חשבון Google ───────────────────────
+app.post('/api/auth/google', makeRateLimit('login'), express.json({ limit: '4kb' }), async (req, res) => {
+  const { credential } = req.body || {};
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return res.status(500).json({ error: 'התחברות Google לא מוגדרת בשרת' });
+  if (!credential || typeof credential !== 'string' || credential.length > 4000) {
+    return res.status(400).json({ error: 'בקשה לא תקינה' });
+  }
+
+  try {
+    // אימות ה-ID token מול גוגל
+    const r = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    const info = await r.json();
+    if (!r.ok || info.aud !== clientId || info.email_verified !== 'true' || !info.email) {
+      secLog('GOOGLE_AUTH_FAIL', req);
+      return res.status(401).json({ error: 'אימות Google נכשל — נסה שוב' });
+    }
+
+    const emailNorm = String(info.email).trim().toLowerCase();
+    const users = loadUsers();
+
+    if (!users[emailNorm]) {
+      users[emailNorm] = {
+        email:     emailNorm,
+        username:  (info.name || emailNorm.split('@')[0]).slice(0, 30),
+        salt:      null,
+        passHash:  null,      // חשבון Google — אין סיסמה מקומית
+        provider:  'google',
+        createdAt: new Date().toISOString(),
+      };
+      saveUsers(users);
+      console.log(`[users] registered via Google: ${emailNorm}`);
+    }
+
+    issueSession(res, emailNorm);
+    res.json({ ok: true, username: users[emailNorm].username, email: emailNorm });
+  } catch (err) {
+    console.error('[google-auth]', err.message);
+    res.status(502).json({ error: 'שגיאה באימות מול Google — נסה שוב' });
+  }
+});
+
+// ─── שחזור סיסמה ─────────────────────────────────────────────────────────────
+const resetTokens = new Map(); // token → { email, exp }
+const RESET_TTL   = 15 * 60 * 1000;
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [t, v] of resetTokens) if (now > v.exp) resetTokens.delete(t);
+}, 10 * 60 * 1000);
+
+let _mailer = null;
+function getMailer() {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  if (!_mailer) {
+    const nodemailer = require('nodemailer');
+    _mailer = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
+  return _mailer;
+}
+
+app.post('/api/forgot', makeRateLimit('login'), express.json({ limit: '1kb' }), async (req, res) => {
+  const emailNorm = String(req.body?.email || '').trim().toLowerCase();
+  // תמיד עונים אותו דבר — לא חושפים אילו מיילים רשומים
+  const genericOk = { ok: true, message: 'אם הכתובת רשומה — נשלח אליה קישור לאיפוס' };
+
+  if (!EMAIL_RE.test(emailNorm)) return res.json(genericOk);
+  const user = loadUsers()[emailNorm];
+  if (!user) return res.json(genericOk);
+  if (!user.passHash) return res.json(genericOk); // חשבון Google — אין מה לאפס
+
+  const mailer = getMailer();
+  if (!mailer) {
+    console.error('[forgot] SMTP not configured (SMTP_USER/SMTP_PASS)');
+    return res.status(500).json({ error: 'שחזור סיסמה עדיין לא מופעל — פנה למנהל' });
+  }
+
+  const token = crypto.randomBytes(24).toString('hex');
+  resetTokens.set(token, { email: emailNorm, exp: Date.now() + RESET_TTL });
+
+  const base = IS_PROD ? `https://${req.headers.host}` : 'http://localhost:5173';
+  const link = `${base}/reset?token=${token}`;
+
+  try {
+    await mailer.sendMail({
+      from: `"טרמפיט" <${process.env.SMTP_USER}>`,
+      to: emailNorm,
+      subject: 'איפוס סיסמה — טרמפיט',
+      html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7">
+        <p>שלום ${user.username},</p>
+        <p>קיבלנו בקשה לאיפוס הסיסמה שלך בטרמפיט. הקישור תקף ל-15 דקות:</p>
+        <p><a href="${link}" style="background:#C2410C;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;display:inline-block">איפוס סיסמה</a></p>
+        <p style="color:#78716C;font-size:13px">אם לא ביקשת איפוס — התעלם מהמייל הזה.</p>
+      </div>`,
+    });
+    res.json(genericOk);
+  } catch (err) {
+    console.error('[forgot] send error:', err.message);
+    res.status(500).json({ error: 'שליחת המייל נכשלה — נסה שוב מאוחר יותר' });
+  }
+});
+
+app.post('/api/reset', makeRateLimit('login'), express.json({ limit: '1kb' }), (req, res) => {
+  const { token, password } = req.body || {};
+  const entry = token && resetTokens.get(String(token));
+  if (!entry || Date.now() > entry.exp) {
+    return res.status(400).json({ error: 'הקישור פג תוקף או לא תקין — בקש איפוס חדש' });
+  }
+  if (typeof password !== 'string' || password.length < 6 || password.length > 100) {
+    return res.status(400).json({ error: 'סיסמה: לפחות 6 תווים' });
+  }
+
+  const users = loadUsers();
+  const user  = users[entry.email];
+  if (!user) return res.status(400).json({ error: 'החשבון לא נמצא' });
+
+  user.salt     = crypto.randomBytes(16).toString('hex');
+  user.passHash = hashPassword(password, user.salt);
+  saveUsers(users);
+  resetTokens.delete(String(token));
+
+  issueSession(res, entry.email);
+  console.log(`[users] password reset: ${entry.email}`);
+  res.json({ ok: true, username: user.username, email: user.email });
 });
 
 // ─── מעקב חיפושים — הדאטהבייס ההתנהגותי לכל משתמש ───────────────────────────

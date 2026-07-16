@@ -6,6 +6,7 @@ import MapPage               from './pages/MapPage.jsx';
 import RidePage              from './pages/RidePage.jsx';
 import JunctionCardDemo      from './pages/JunctionCardDemo.jsx';
 import AdminPage             from './pages/AdminPage.jsx';
+import ResetPage             from './pages/ResetPage.jsx';
 import ErrorBoundary         from './components/ErrorBoundary.jsx';
 import AuthScreen            from './components/AuthScreen.jsx';
 import SplashScreen          from './components/SplashScreen.jsx';
@@ -67,7 +68,10 @@ export default function App() {
     <>
       {splashVisible && <SplashScreen fading={splashFading} message={wakeMessage} />}
 
-      {authed !== null && (
+      {/* עמוד איפוס סיסמה — נגיש גם בלי התחברות (מגיעים אליו מקישור במייל) */}
+      {authed !== null && window.location.pathname === '/reset' && <ResetPage />}
+
+      {authed !== null && window.location.pathname !== '/reset' && (
         authed === false
           ? <AuthScreen onLogin={() => {
               setAuthed(true);

@@ -1,17 +1,88 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconRoute } from '../icons.jsx';
 
 export default function AuthScreen({ onLogin }) {
-  const [mode, setMode] = useState('register'); // 'register' | 'login'
+  const [mode, setMode] = useState('register'); // 'register' | 'login' | 'forgot'
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [error, setError]     = useState('');
+  const [notice, setNotice]   = useState('');
   const [loading, setLoading] = useState(false);
+  const googleBtnRef = useRef(null);
 
   const isRegister = mode === 'register';
+  const isForgot   = mode === 'forgot';
 
   function switchMode(m) {
     setMode(m);
     setError('');
+    setNotice('');
+  }
+
+  // ── Google Sign-In ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initGoogle() {
+      try {
+        const cfg = await fetch('/api/config').then(r => r.json());
+        if (cancelled || !cfg.googleClientId) return;
+
+        function render() {
+          if (cancelled || !googleBtnRef.current) return;
+          window.google.accounts.id.initialize({
+            client_id: cfg.googleClientId,
+            callback: async (resp) => {
+              try {
+                const r = await fetch('/api/auth/google', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ credential: resp.credential }),
+                });
+                const d = await r.json();
+                if (r.ok && d.ok) onLogin();
+                else setError(d.error || 'אימות Google נכשל');
+              } catch { setError('שגיאת חיבור — נסה שוב'); }
+            },
+          });
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: 'outline', size: 'large', width: 280, locale: 'he',
+          });
+        }
+
+        if (window.google?.accounts?.id) return render();
+        const s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.onload = render;
+        document.head.appendChild(s);
+      } catch { /* אין קונפיג — פשוט לא מציגים את הכפתור */ }
+    }
+
+    initGoogle();
+    return () => { cancelled = true; };
+  }, [onLogin]);
+
+  async function handleForgot(e) {
+    e.preventDefault();
+    if (!form.email.trim()) { setError('נא למלא אימייל'); return; }
+    setLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const res  = await fetch('/api/forgot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'שגיאה — נסה שוב'); return; }
+      setNotice(data.message || 'אם הכתובת רשומה — נשלח אליה קישור לאיפוס');
+    } catch {
+      setError('שגיאת חיבור — נסה שוב');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -53,27 +124,53 @@ export default function AuthScreen({ onLogin }) {
           טרמפ<span style={{ color: 'var(--primary)' }}>יט</span>
         </div>
         <div style={s.sub}>
-          {isRegister ? 'צור חשבון חינם והתחל לנווט' : 'ברוך שובך!'}
+          {isForgot ? 'איפוס סיסמה' : isRegister ? 'צור חשבון חינם והתחל לנווט' : 'ברוך שובך!'}
         </div>
 
         {/* מתג הרשמה / התחברות */}
-        <div style={s.tabs}>
-          <button
-            type="button"
-            style={{ ...s.tab, ...(isRegister ? s.tabActive : {}) }}
-            onClick={() => switchMode('register')}
-          >
-            הרשמה
-          </button>
-          <button
-            type="button"
-            style={{ ...s.tab, ...(!isRegister ? s.tabActive : {}) }}
-            onClick={() => switchMode('login')}
-          >
-            התחברות
-          </button>
-        </div>
+        {!isForgot && (
+          <div style={s.tabs}>
+            <button
+              type="button"
+              style={{ ...s.tab, ...(isRegister ? s.tabActive : {}) }}
+              onClick={() => switchMode('register')}
+            >
+              הרשמה
+            </button>
+            <button
+              type="button"
+              style={{ ...s.tab, ...(!isRegister ? s.tabActive : {}) }}
+              onClick={() => switchMode('login')}
+            >
+              התחברות
+            </button>
+          </div>
+        )}
 
+        {isForgot && (
+          <form onSubmit={handleForgot} style={s.form}>
+            <input
+              style={s.input}
+              type="email"
+              placeholder="האימייל שנרשמת איתו"
+              value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              autoComplete="email"
+              dir="ltr"
+              autoFocus
+            />
+            {error  && <div style={s.error}>{error}</div>}
+            {notice && <div style={s.notice}>{notice}</div>}
+            <button style={{ ...s.btn, opacity: loading ? 0.6 : 1 }} type="submit" disabled={loading}>
+              {loading ? 'שולח...' : 'שלח קישור לאיפוס'}
+            </button>
+            <button type="button" style={s.linkBtn} onClick={() => switchMode('login')}>
+              → חזרה להתחברות
+            </button>
+          </form>
+        )}
+
+        {!isForgot && (
         <form onSubmit={handleSubmit} style={s.form}>
           {isRegister && (
             <input
@@ -112,7 +209,25 @@ export default function AuthScreen({ onLogin }) {
               ? (isRegister ? 'יוצר חשבון...' : 'מתחבר...')
               : (isRegister ? 'צור חשבון →' : 'כניסה →')}
           </button>
+
+          {!isRegister && (
+            <button type="button" style={s.linkBtn} onClick={() => switchMode('forgot')}>
+              שכחתי סיסמה
+            </button>
+          )}
         </form>
+        )}
+
+        {!isForgot && (
+          <>
+            <div style={s.divider}>
+              <div style={s.dividerLine} />
+              <span style={s.dividerText}>או</span>
+              <div style={s.dividerLine} />
+            </div>
+            <div ref={googleBtnRef} style={s.googleWrap} />
+          </>
+        )}
 
         {isRegister && (
           <div style={s.consent}>
@@ -145,8 +260,15 @@ const s = {
 
   form:  { display: 'flex', flexDirection: 'column', gap: 12 },
   input: { background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', color: 'var(--foreground)', fontSize: 16, fontFamily: 'var(--font-body)', outline: 'none', direction: 'rtl', textAlign: 'right' },
-  error: { color: 'var(--destructive)', fontSize: 13 },
-  btn:   { background: 'var(--primary)', border: 'none', borderRadius: 10, padding: '14px', color: 'var(--primary-foreground)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-heading)' },
+  error:  { color: 'var(--destructive)', fontSize: 13 },
+  notice: { color: 'var(--accent)', fontSize: 13, background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.3)', borderRadius: 8, padding: '9px 12px' },
+  btn:    { background: 'var(--primary)', border: 'none', borderRadius: 10, padding: '14px', color: 'var(--primary-foreground)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-heading)' },
+  linkBtn:{ background: 'none', border: 'none', color: 'var(--muted-foreground)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)', padding: '2px 0', textDecoration: 'underline' },
+
+  divider:     { display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 12px' },
+  dividerLine: { flex: 1, height: 1, background: 'var(--border)' },
+  dividerText: { fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap', flexShrink: 0 },
+  googleWrap:  { display: 'flex', justifyContent: 'center', minHeight: 40 },
 
   consent: { fontSize: 11, color: 'var(--muted-foreground)', marginTop: 14, lineHeight: 1.5 },
 };
