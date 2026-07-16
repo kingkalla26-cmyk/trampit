@@ -27,4 +27,5 @@ Thumbs.db
 data/sessions.json
 data/votes.json
 data/users.json
+data/searches.json
 spots.json

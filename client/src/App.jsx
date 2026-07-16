@@ -5,6 +5,7 @@ import SearchPage            from './pages/SearchPage.jsx';
 import MapPage               from './pages/MapPage.jsx';
 import RidePage              from './pages/RidePage.jsx';
 import JunctionCardDemo      from './pages/JunctionCardDemo.jsx';
+import AdminPage             from './pages/AdminPage.jsx';
 import ErrorBoundary         from './components/ErrorBoundary.jsx';
 import AuthScreen            from './components/AuthScreen.jsx';
 import SplashScreen          from './components/SplashScreen.jsx';
@@ -82,6 +83,7 @@ export default function App() {
                 <Route path="/map"  element={<MapPage />} />
                 <Route path="/ride" element={<RidePage />} />
                 <Route path="/demo" element={<JunctionProvider><JunctionCardDemo /></JunctionProvider>} />
+                <Route path="/admin" element={<AdminPage />} />
                 <Route path="*"     element={<Navigate to="/" replace />} />
               </Routes>
             </ErrorBoundary>

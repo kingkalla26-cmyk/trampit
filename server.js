@@ -311,6 +311,42 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── מעקב חיפושים — הדאטהבייס ההתנהגותי לכל משתמש ───────────────────────────
+const MAX_SEARCH_LOG = 5000;
+
+function logSearch(req, entry) {
+  const searches = store.get('searches', []);
+  searches.push({ ...entry, email: req.userEmail || null, ts: new Date().toISOString() });
+  if (searches.length > MAX_SEARCH_LOG) searches.splice(0, searches.length - MAX_SEARCH_LOG);
+  store.set('searches', searches);
+}
+
+// ─── /api/admin/overview — משתמשים + היסטוריית חיפושים (אדמין בלבד) ─────────
+app.get('/api/admin/overview', requireAdmin, (req, res) => {
+  const users    = loadUsers();
+  const searches = store.get('searches', []);
+
+  const byEmail = {};
+  for (const s of searches) {
+    if (!s.email) continue;
+    (byEmail[s.email] = byEmail[s.email] || []).push(s);
+  }
+
+  res.json({
+    totalUsers:    Object.keys(users).length,
+    totalSearches: searches.length,
+    users: Object.values(users)
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      .map(u => ({
+        email:       u.email,
+        username:    u.username,
+        createdAt:   u.createdAt,
+        searchCount: (byEmail[u.email] || []).length,
+        searches:    (byEmail[u.email] || []).slice(-50).reverse(),
+      })),
+  });
+});
+
 // ─── /api/analyze ────────────────────────────────────────────────────────────
 
 function messagesHaveImage(messages) {
@@ -906,6 +942,8 @@ app.get('/api/route/plan', requireAuth, makeRateLimit('decision'), async (req, r
     return res.status(400).json({ error: 'מיקומך מחוץ לגבולות ישראל' });
   }
 
+  logSearch(req, { type: 'plan', destination: dest });
+
   // ── שלב 1: Geocoding — יעד הנהג לקואורדינטות ──────────────────────────────
   let destLat, destLng, destName;
   try {
@@ -1197,6 +1235,8 @@ app.get('/api/route/exits', requireAuth, makeRateLimit('decision'), async (req, 
       origin.length > 80 || carDest.length > 80 || destination.length > 80) {
     return res.status(400).json({ error: 'חסרים פרמטרים תקינים: origin, carDest, destination' });
   }
+
+  logSearch(req, { type: 'search', origin, destination, carDest });
 
   // ── Geocoding מקבילי ──────────────────────────────────────────────────────
   async function geocodePlace(place) {

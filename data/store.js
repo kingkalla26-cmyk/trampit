@@ -19,8 +19,9 @@ const FILE_PATHS = {
   votes:    path.join(__dirname, 'votes.json'),
   sessions: path.join(__dirname, 'sessions.json'),
   users:    path.join(__dirname, 'users.json'),
+  searches: path.join(__dirname, 'searches.json'),
 };
-const FILE_DEFAULTS = { spots: [], votes: {}, sessions: {}, users: {} };
+const FILE_DEFAULTS = { spots: [], votes: {}, sessions: {}, users: {}, searches: [] };
 
 const cache   = new Map();          // key → value (source of truth בזמן ריצה)
 let   pool    = null;               // pg.Pool כשיש DATABASE_URL
