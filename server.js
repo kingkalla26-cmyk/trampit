@@ -374,28 +374,34 @@ setInterval(() => {
   for (const [t, v] of resetTokens) if (now > v.exp) resetTokens.delete(t);
 }, 10 * 60 * 1000);
 
-// שליחת מייל דרך Brevo HTTP API — Render חוסם SMTP יוצא בתוכנית החינמית,
+// שליחת מייל דרך Mailjet HTTP API — Render חוסם SMTP יוצא בתוכנית החינמית,
 // אז חייבים ספק שעובד על HTTPS (פורט 443)
 async function sendEmail({ to, subject, html }) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const sender = process.env.MAIL_FROM || 'trempit01@gmail.com';
-  if (!apiKey) return { ok: false, code: 'NOT_CONFIGURED' };
+  const apiKey    = process.env.MAILJET_API_KEY;
+  const secretKey = process.env.MAILJET_SECRET_KEY;
+  const sender    = process.env.MAIL_FROM || 'trempit01@gmail.com';
+  if (!apiKey || !secretKey) return { ok: false, code: 'NOT_CONFIGURED' };
 
   try {
-    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const r = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Basic ' + Buffer.from(`${apiKey}:${secretKey}`).toString('base64'),
+      },
       body: JSON.stringify({
-        sender:      { name: 'טרמפיט', email: sender },
-        to:          [{ email: to }],
-        subject,
-        htmlContent: html,
+        Messages: [{
+          From:     { Email: sender, Name: 'טרמפיט' },
+          To:       [{ Email: to }],
+          Subject:  subject,
+          HTMLPart: html,
+        }],
       }),
       signal: AbortSignal.timeout(15000),
     });
     if (!r.ok) {
       const body = await r.text().catch(() => '');
-      console.error('[mail] brevo error:', r.status, body.slice(0, 200));
+      console.error('[mail] mailjet error:', r.status, body.slice(0, 200));
       return { ok: false, code: `HTTP_${r.status}` };
     }
     return { ok: true };
