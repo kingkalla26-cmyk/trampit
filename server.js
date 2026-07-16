@@ -374,22 +374,35 @@ setInterval(() => {
   for (const [t, v] of resetTokens) if (now > v.exp) resetTokens.delete(t);
 }, 10 * 60 * 1000);
 
-let _mailer = null;
-function getMailer() {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
-  if (!_mailer) {
-    const nodemailer = require('nodemailer');
-    _mailer = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS.replace(/\s+/g, '') },
-      connectionTimeout: 10000,
-      greetingTimeout:   10000,
-      socketTimeout:     20000,
+// שליחת מייל דרך Brevo HTTP API — Render חוסם SMTP יוצא בתוכנית החינמית,
+// אז חייבים ספק שעובד על HTTPS (פורט 443)
+async function sendEmail({ to, subject, html }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const sender = process.env.MAIL_FROM || 'trempit01@gmail.com';
+  if (!apiKey) return { ok: false, code: 'NOT_CONFIGURED' };
+
+  try {
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      body: JSON.stringify({
+        sender:      { name: 'טרמפיט', email: sender },
+        to:          [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+      signal: AbortSignal.timeout(15000),
     });
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.error('[mail] brevo error:', r.status, body.slice(0, 200));
+      return { ok: false, code: `HTTP_${r.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error('[mail] send error:', err.message);
+    return { ok: false, code: err.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK' };
   }
-  return _mailer;
 }
 
 app.post('/api/forgot', makeRateLimit('login'), express.json({ limit: '1kb' }), async (req, res) => {
@@ -402,35 +415,31 @@ app.post('/api/forgot', makeRateLimit('login'), express.json({ limit: '1kb' }), 
   if (!user) return res.json(genericOk);
   if (!user.passHash) return res.json(genericOk); // חשבון Google — אין מה לאפס
 
-  const mailer = getMailer();
-  if (!mailer) {
-    console.error('[forgot] SMTP not configured (SMTP_USER/SMTP_PASS)');
-    return res.status(500).json({ error: 'שחזור סיסמה עדיין לא מופעל — פנה למנהל' });
-  }
-
   const token = crypto.randomBytes(24).toString('hex');
   resetTokens.set(token, { email: emailNorm, exp: Date.now() + RESET_TTL });
 
   const base = IS_PROD ? `https://${req.headers.host}` : 'http://localhost:5173';
   const link = `${base}/reset?token=${token}`;
 
-  try {
-    await mailer.sendMail({
-      from: `"טרמפיט" <${process.env.SMTP_USER}>`,
-      to: emailNorm,
-      subject: 'איפוס סיסמה — טרמפיט',
-      html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7">
-        <p>שלום ${user.username},</p>
-        <p>קיבלנו בקשה לאיפוס הסיסמה שלך בטרמפיט. הקישור תקף ל-15 דקות:</p>
-        <p><a href="${link}" style="background:#C2410C;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;display:inline-block">איפוס סיסמה</a></p>
-        <p style="color:#78716C;font-size:13px">אם לא ביקשת איפוס — התעלם מהמייל הזה.</p>
-      </div>`,
-    });
-    res.json(genericOk);
-  } catch (err) {
-    console.error('[forgot] send error:', err.code, err.message);
-    res.status(500).json({ error: 'שליחת המייל נכשלה — נסה שוב מאוחר יותר', code: err.code || null });
+  const result = await sendEmail({
+    to: emailNorm,
+    subject: 'איפוס סיסמה — טרמפיט',
+    html: `<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7">
+      <p>שלום ${user.username},</p>
+      <p>קיבלנו בקשה לאיפוס הסיסמה שלך בטרמפיט. הקישור תקף ל-15 דקות:</p>
+      <p><a href="${link}" style="background:#C2410C;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;display:inline-block">איפוס סיסמה</a></p>
+      <p style="color:#78716C;font-size:13px">אם לא ביקשת איפוס — התעלם מהמייל הזה.</p>
+    </div>`,
+  });
+
+  if (!result.ok) {
+    resetTokens.delete(token);
+    if (result.code === 'NOT_CONFIGURED') {
+      return res.status(500).json({ error: 'שחזור סיסמה עדיין לא מופעל — פנה למנהל' });
+    }
+    return res.status(500).json({ error: 'שליחת המייל נכשלה — נסה שוב מאוחר יותר', code: result.code });
   }
+  res.json(genericOk);
 });
 
 app.post('/api/reset', makeRateLimit('login'), express.json({ limit: '1kb' }), (req, res) => {
